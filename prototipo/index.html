@@ -186,6 +186,40 @@ td.r,th.r{text-align:right}
 .pad button{height:56px;border-radius:999px;border:0;background:var(--sunk);font-family:var(--f-cond);font-size:22px;color:var(--ink)}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 22px;border-radius:999px;font-weight:500;z-index:60;max-width:calc(100% - 32px);box-shadow:0 10px 30px -14px rgba(40,30,10,.45)}
 .hint{font-size:13px;color:var(--muted);text-align:center;max-width:70ch;margin:0}
+.small{font-size:12.5px}
+.me{margin-left:auto;display:flex;align-items:center;gap:14px;text-align:right;line-height:1.25}
+.me b{color:var(--ink)}
+.login{display:flex;justify-content:center;padding-block:48px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.login-in{width:100%;max-width:820px;display:flex;flex-direction:column;gap:24px;align-items:center;text-align:center}
+.login-in h1{font-size:40px}
+.who-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:100%}
+.who-card{border:1px solid var(--line-strong);background:var(--surface);border-radius:22px;padding:20px 22px;text-align:left;display:flex;flex-direction:column;gap:4px}
+.who-card b{font-family:var(--f-serif);font-size:22px;color:var(--ink)}
+.who-card span{color:var(--muted);font-size:13.5px}
+.who-card em{font-style:normal;font-family:var(--f-cond);text-transform:uppercase;letter-spacing:.1em;font-size:11.5px;color:var(--terra)}
+.who-card[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.login .pad{width:260px;max-width:100%}
+.days{display:flex;gap:4px}
+.day{width:30px;height:30px;border-radius:50%;border:1px solid var(--line-strong);background:transparent;font-family:var(--f-cond);font-size:12px;color:var(--muted);display:grid;place-items:center;padding:0}
+.day.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+th.today{color:var(--terra)}
+.week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line)}
+.wk{padding:12px 10px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.wk:first-child{padding-left:0}
+.wk + .wk{border-left:1px solid var(--line)}
+.wk b{font-family:var(--f-serif);color:var(--ink);font-size:15px;overflow-wrap:anywhere}
+.wk .d{font-family:var(--f-cond);text-transform:uppercase;letter-spacing:.1em;font-size:11.5px;color:var(--muted)}
+.wk.today .d{color:var(--terra)}
+@media (max-width:700px){.week-strip{grid-template-columns:repeat(4,minmax(0,1fr))}.wk:nth-child(5){border-left:0;padding-left:0}.wk:nth-child(n+5){border-top:1px solid var(--line)}}
+.ck{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.ck input{grid-column:1/-1}
+.okbad{display:flex;gap:6px}
+.okbad button{border:1px solid var(--line-strong);background:transparent;border-radius:999px;padding:8px 16px;font-weight:600;font-size:13.5px;color:var(--muted)}
+.okbad button[data-v="ok"][aria-pressed="true"]{background:var(--olive);border-color:var(--olive);color:#fff}
+.okbad button[data-v="mal"][aria-pressed="true"]{background:var(--terra);border-color:var(--terra);color:#fff}
+.edit-box{background:var(--surface);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.x{border:0;background:transparent;color:var(--muted);font-size:18px;padding:2px 8px}
+.pos{color:var(--olive);font-weight:600}
 </style>
 
 <div id="app"></div>
@@ -207,9 +241,23 @@ const PACK_OVERRIDE={'Pan menudo':25,'Sushi':4,'Bananos':20};
 const PRODUCTS=[];let n=1;
 for(const c in RAW)for(const [name,cost] of RAW[c]){PRODUCTS.push({id:'p'+String(n++).padStart(2,'0'),name,cat:c,cost,pack:PACK_OVERRIDE[name]||CATS[c][1]})}
 const P=Object.fromEntries(PRODUCTS.map(p=>[p.id,p]));
-const CENTRAL_USERS=['Karla Méndez · Bodega','José Alvarado · Bodega','Ana Rivas · Supervisión'];
-const SUC_USERS={Merliot:['Gabriela H.','Óscar P.'],TOG:['María L.','Kevin R.'],Soho:['Daniela C.','Luis F.'],Cascadas:['Andrea M.','Carlos V.'],Tigo:['Sofía G.','Mario A.'],Emblema:['Paola R.','Jorge E.'],Kinetika:['Valeria S.','Diego N.']};
 const DAYS=['L','M','M','J','V','S','D'];
+const DAYN=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const TODAY=4; // viernes 13 de noviembre
+
+/* ---------- usuarios y permisos ---------- */
+const TEAM=[
+ {id:'duena',name:'Dueña',role:'duena',perfil:'Dueña · ve todo',desc:'Costos, faltantes, cierre semanal, plan de distribución y equipo.'},
+ {id:'ricardo',name:'Ricardo',role:'ops',focus:'ingreso',perfil:'Operaciones · Inventario',desc:'Ingresos de proveedor, paquetes e inventario de bodega.'},
+ {id:'rebeca',name:'Rebeca',role:'ops',focus:'distribucion',perfil:'Operaciones · Distribución',desc:'Despacha y entrega lo que va a cada sucursal.'},
+ {id:'chris',name:'Chris',role:'ops',focus:'supervision',perfil:'Operaciones · Supervisión',desc:'Visita una sucursal cada día con el checklist.'},
+];
+const SUC_USERS={Merliot:['Gabriela H.','Óscar P.'],TOG:['María L.','Kevin R.'],Soho:['Daniela C.','Luis F.'],Cascadas:['Andrea M.','Carlos V.'],Tigo:['Sofía G.','Mario A.'],Emblema:['Paola R.','Jorge E.'],Kinetika:['Valeria S.','Diego N.']};
+const NAV={
+ duena:[['resumen','Resumen'],['distribucion','Distribución'],['supervision','Supervisión'],['semana','Cierre semanal'],['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes'],['envios','Envíos'],['equipo','Equipo']],
+ ops:[['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes'],['distribucion','Distribución'],['envios','Envíos'],['supervision','Supervisión']]
+};
+const LOGO=`<img src="https://grtomatoes.com/assets/img/logo/logo-verde.png" alt="Green &amp; Red Tomatoes" onerror="this.outerHTML='<span class=wordmark>Green &amp; Red Tomatoes</span>'">`;
 
 /* ---------- datos de ejemplo (sembrados) ---------- */
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -217,82 +265,126 @@ const R=rng(46);const ri=(a,b)=>a+Math.floor(R()*(b-a+1));
 const initials=s=>s.replace(/[^A-Za-zÁÉÍÓÚÑáéíóúñü ]/g,'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 const h=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=v=>(v<0?'−':'')+'$'+Math.abs(v).toFixed(2);
+const moneyS=v=>v>0?'+'+money(v):money(v);
 let seq=1240;const newCode=()=>'GRT'+String(++seq).padStart(6,'0');
 let envSeq=101;
 
-const S={mode:'office',view:'resumen',suc:'Merliot',tview:'home',online:true,queue:[],
+const S={user:null,mode:'login',view:'',suc:'Merliot',tview:'home',online:true,queue:[],
  stock:{},packages:[],envios:[],ingresos:[],log:[],branch:{},week:{},
  ing:{prov:'Distribuidora La Central',qty:{},cat:'beb'},
- pk:{pid:'p01',n:4,per:12,err:''},lastBatch:[],
+ pk:{pid:'p01',n:4,per:12},lastBatch:[],
  env:{suc:'Soho',codes:[],scan:''},
- wsuc:'Merliot',
+ wsuc:'Merliot',plan:{},planEdit:null,todayEnv:{},
+ checklist:['Local limpio: piso, mesas y baño','Vitrina ordenada y con producto','Sin producto vencido o dañado','Refrigeradora a la temperatura correcta','Personal con uniforme y gorro','Cierre de ayer hecho en la tablet','Envíos recibidos y escaneados','Caja chica cuadrada'],
+ newItem:'',visits:[],visit:null,
+ login:{who:null,suc:'Merliot',pin:''},
  scan:null,cd:null,modal:null};
 
 PRODUCTS.forEach(p=>S.stock[p.id]=ri(3,14)*p.pack);
+const pkg=c=>S.packages.find(x=>x.code===c);
 function makePkgs(pid,count,status,extra={}){const out=[];for(let i=0;i<count;i++){const pk={code:newCode(),pid,units:P[pid].pack,status,idx:i+1,of:count,made:'13 nov',...extra};S.packages.push(pk);out.push(pk)}return out}
-// paquetes ya armados en bodega
-[['p01',6],['p10',4],['p23',5],['p35',3],['p36',4],['p52',2],['p56',2]].forEach(([pid,c])=>makePkgs(pid,c,'bodega'));
-// envíos en camino
-function addEnvio(suc,items,status,fecha){const id='ENV-'+String(++envSeq).padStart(4,'0');const codes=[];items.forEach(([pid,c])=>makePkgs(pid,c,status==='en_camino'?'en_camino':'recibido',{envio:id,suc}).forEach(p=>codes.push(p.code)));S.envios.unshift({id,suc,fecha,codes,status,by:'Karla Méndez',recibidoPor:status==='en_camino'?null:SUC_USERS[suc][0]});return id}
-addEnvio('Cascadas',[['p01',2],['p36',2],['p51',1]],'recibido','12 nov 7:10');
-addEnvio('TOG',[['p12',2],['p40',3]],'con_diferencia','12 nov 7:25');
-addEnvio('Merliot',[['p01',2],['p05',1],['p23',1],['p40',2]],'en_camino','13 nov 6:50');
-addEnvio('Soho',[['p10',2],['p52',1]],'en_camino','13 nov 7:05');
-addEnvio('Emblema',[['p17',2],['p62',1],['p67',1]],'en_camino','13 nov 7:20');
-S.envios.find(e=>e.status==='con_diferencia').faltan=1;
+[['p01',6],['p10',4],['p23',5],['p35',3],['p36',4],['p52',2],['p56',3]].forEach(([pid,c])=>makePkgs(pid,c,'bodega'));
 
-const now=['Gabriela H.','María L.','Daniela C.','Andrea M.',null,'Paola R.',null];
-SUC.forEach((s,i)=>{S.branch[s]={sync:[3,6,2,11,18,4,190][i],online:i!==6,cierre:now[i]?{user:now[i],t:['8:41 pm','8:55 pm','9:02 pm','8:37 pm',null,'9:15 pm'][i]}:null}});
+// plan de distribución por días de la semana (lo define la dueña). items = paquetes por producto
+S.plan={
+ Merliot:{days:[0,2,4],items:{p01:2,p05:1,p23:1,p40:2}},
+ TOG:{days:[0,3,5],items:{p12:2,p40:3}},
+ Soho:{days:[1,4],items:{p10:2,p52:1}},
+ Cascadas:{days:[0,2,4],items:{p01:2,p36:2,p56:1}},
+ Tigo:{days:[1,3,5],items:{p17:1,p23:2}},
+ Emblema:{days:[2,4],items:{p23:2,p35:1}},
+ Kinetika:{days:[1,3,5],items:{p01:1,p36:1}}
+};
+function seedEnvio(suc,status,fecha,salio,dejo,rec){const id='ENV-'+String(++envSeq).padStart(4,'0');const codes=[];
+ for(const pid in S.plan[suc].items)makePkgs(pid,S.plan[suc].items[pid],status==='recibido'||status==='con_diferencia'?'recibido':'en_camino',{envio:id,suc}).forEach(p=>codes.push(p.code));
+ const e={id,suc,fecha,codes,status,salio,dejo,recibidoPor:rec?rec[0]:null,recibidoAt:rec?rec[1]:null};S.envios.unshift(e);return e}
+seedEnvio('Cascadas','recibido','12 nov',{by:'Rebeca',at:'7:10 am'},{by:'Rebeca',at:'8:02 am'},['Andrea M.','8:15 am']);
+const tog=seedEnvio('TOG','con_diferencia','12 nov',{by:'Rebeca',at:'7:25 am'},{by:'Rebeca',at:'8:30 am'},['María L.','8:41 am']);tog.faltan=1;pkg(tog.codes[0]).status='faltante';
+S.todayEnv.Merliot=seedEnvio('Merliot','en_camino','13 nov',{by:'Rebeca',at:'6:50 am'},null).id;
+S.todayEnv.Soho=seedEnvio('Soho','entregado','13 nov',{by:'Rebeca',at:'7:05 am'},{by:'Rebeca',at:'7:48 am'}).id;
 
-// semana cerrada 2–8 nov
+const cierres=['Gabriela H.','María L.','Daniela C.','Andrea M.',null,'Paola R.',null];
+SUC.forEach((s,i)=>{S.branch[s]={sync:[3,6,2,11,18,4,190][i],online:i!==6,cierre:cierres[i]?{user:cierres[i],t:['8:41 pm','8:55 pm','9:02 pm','8:37 pm',null,'9:15 pm'][i]}:null}});
+
+// semana cerrada 2–8 nov: el conteo puede salir con faltante o con sobrante
 SUC.forEach(s=>{const w={};PRODUCTS.forEach(p=>{const ini=ri(2,18);const ent=[],ven=[];let have=ini;for(let d=0;d<7;d++){const e=R()<.35?p.pack*ri(1,2):0;have+=e;const v=Math.min(have,ri(0,Math.max(2,Math.round(p.pack*.6))));have-=v;ent.push(e);ven.push(v)}
- const esperado=have;const loss=R()<(s==='TOG'||s==='Tigo'?.22:.08)?ri(1,3):0;w[p.id]={ini,ent,ven,esperado,contado:Math.max(0,esperado-loss)}});S.week[s]=w});
+ const esperado=have;const r=R();const delta=r<(s==='TOG'||s==='Tigo'?.22:.08)?-ri(1,3):(r>.9?ri(1,2):0);w[p.id]={ini,ent,ven,esperado,contado:Math.max(0,esperado+delta)}});S.week[s]=w});
+
+// visitas de supervisión (ago = hace cuántos días)
+function seedVisit(suc,ago,fecha,bad,conteo){const results=S.checklist.map((item,i)=>({item,ok:!bad.some(b=>b[0]===i),note:(bad.find(b=>b[0]===i)||[])[1]||''}));S.visits.push({suc,ago,fecha,at:'10:30 am',by:'Chris',results,conteo})}
+seedVisit('Emblema',9,'Mié 4 nov',[],[{pid:'p23',sistema:9,contado:9}]);
+seedVisit('Cascadas',8,'Jue 5 nov',[[2,'2 flanes vencidos, se retiraron']],[{pid:'p01',sistema:14,contado:14}]);
+seedVisit('Merliot',7,'Vie 6 nov',[],[{pid:'p36',sistema:6,contado:6}]);
+seedVisit('Tigo',4,'Lun 9 nov',[[3,'Refri a 9 °C, se reportó a mantenimiento'],[7,'Faltaban $4.50']],[{pid:'p17',sistema:11,contado:8}]);
+seedVisit('TOG',3,'Mar 10 nov',[[0,'Baño sin limpiar']],[{pid:'p40',sistema:7,contado:6}]);
+seedVisit('Soho',2,'Mié 11 nov',[],[{pid:'p10',sistema:12,contado:12}]);
+seedVisit('Kinetika',1,'Jue 12 nov',[[5,'La tablet no tenía internet, cierre pendiente']],[{pid:'p01',sistema:10,contado:10}]);
 
 S.log=[
- {t:'7:20 am',txt:'Karla Méndez despachó <b>ENV-0106</b> a Emblema · 4 paquetes'},
- {t:'7:05 am',txt:'Karla Méndez despachó <b>ENV-0105</b> a Soho · 3 paquetes'},
- {t:'6:50 am',txt:'Karla Méndez despachó <b>ENV-0104</b> a Merliot · 6 paquetes'},
- {t:'6:15 am',txt:'José Alvarado cerró ingreso de <b>Distribuidora La Central</b> · 18 productos, 1,240 u'},
+ {t:'7:48 am',txt:'Rebeca entregó <b>'+S.todayEnv.Soho+'</b> en Soho · falta que la sucursal escanee'},
+ {t:'7:05 am',txt:'Rebeca despachó <b>'+S.todayEnv.Soho+'</b> a Soho'},
+ {t:'6:50 am',txt:'Rebeca despachó <b>'+S.todayEnv.Merliot+'</b> a Merliot'},
+ {t:'6:15 am',txt:'Ricardo cerró ingreso de <b>Distribuidora La Central</b> · 18 productos, 1,240 u'},
+ {t:'ayer',txt:'Chris visitó Kinetika · 7 de 8 bien',bad:false},
  {t:'ayer',txt:'Kinetika no envía datos desde hace 3 h (sin internet)',bad:true},
- {t:'ayer',txt:'TOG recibió <b>ENV-0103</b> con <b class="neg">1 paquete faltante</b>',bad:true},
+ {t:'ayer',txt:'TOG recibió <b>'+tog.id+'</b> con <b>1 paquete faltante</b>',bad:true},
 ];
-S.ingresos=[{fecha:'13 nov 6:15',prov:'Distribuidora La Central',prods:18,units:1240,by:'José Alvarado'},{fecha:'12 nov 6:30',prov:'Bimbo',prods:9,units:620,by:'Karla Méndez'},{fecha:'11 nov 6:20',prov:'Lácteos del Valle',prods:6,units:432,by:'Karla Méndez'}];
+S.ingresos=[{fecha:'13 nov 6:15',prov:'Distribuidora La Central',prods:18,units:1240,by:'Ricardo'},{fecha:'12 nov 6:30',prov:'Bimbo',prods:9,units:620,by:'Ricardo'},{fecha:'11 nov 6:20',prov:'Lácteos del Valle',prods:6,units:432,by:'Ricardo'}];
 
 /* ---------- utilidades ---------- */
-function weekDiff(s){let u=0,v=0;for(const pid in S.week[s]){const r=S.week[s][pid];const d=r.contado-r.esperado;u+=d;v+=d*(P[pid].cost||0)}return{u,v}}
+const isOwner=()=>S.user&&S.user.role==='duena';
+function weekDiff(s){let fu=0,su=0,fv=0,sv=0;for(const pid in S.week[s]){const r=S.week[s][pid];const d=r.contado-r.esperado,c=P[pid].cost||0;if(d<0){fu+=d;fv+=d*c}else{su+=d;sv+=d*c}}return{fu,su,fv,sv,neto:fv+sv}}
 function thumb(p){return `<span class="thumb c-${p.cat}">${h(initials(p.name))}</span>`}
 function prodCell(p,sub){return `<div class="prod">${thumb(p)}<span><b style="font-weight:600">${h(p.name)}</b>${sub?`<br><span class="muted" style="font-size:13px">${sub}</span>`:''}</span></div>`}
 function stepper(key,val,cls=''){return `<span class="step ${cls}"><button data-act="dec" data-key="${key}" aria-label="Restar">−</button><input data-key="${key}" inputmode="numeric" value="${val??''}" placeholder="0" aria-label="Cantidad"><button data-act="inc" data-key="${key}" aria-label="Sumar">+</button></span>`}
 function getKey(k){return k.split('.').reduce((o,x)=>o?.[x],S)}
 function setKey(k,v){const a=k.split('.');const last=a.pop();const o=a.reduce((o,x)=>o[x],S);o[last]=v}
-function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3600)}
+function toast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3800)}
+const nowT=()=>{const d=new Date();let hh=d.getHours(),mm=String(d.getMinutes()).padStart(2,'0');const ap=hh>=12?'pm':'am';hh=hh%12||12;return `${hh}:${mm} ${ap}`};
+const pedidoTxt=s=>Object.entries(S.plan[s].items).filter(([,q])=>+q>0).map(([pid,q])=>`${h(P[pid].name)} <span class="muted">×${q}</span>`).join(' · ')||'<span class="muted">Sin productos</span>';
+function pickFor(s){const picked=[],missing=[];for(const [pid,q] of Object.entries(S.plan[s].items)){const need=+q||0;if(!need)continue;const av=S.packages.filter(p=>p.status==='bodega'&&p.pid===pid).slice(0,need);picked.push(...av.map(p=>p.code));if(av.length<need)missing.push([pid,need-av.length])}return{picked,missing}}
+function lastVisit(s){return S.visits.filter(v=>v.suc===s).sort((a,b)=>a.ago-b.ago)[0]}
+const visitOk=v=>v.results.filter(r=>r.ok).length;
 const icon={
  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
  scan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3"/><path d="M7 8v8M10 8v8M13 8v8M17 8v8"/></svg>',
  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11h6M9 15h4"/><rect x="5" y="3" width="14" height="18" rx="2"/></svg>'
 };
+const ST={en_camino:'<span class="pill warn">En camino</span>',entregado:'<span class="pill warn">Entregado, sin escanear</span>',recibido:'<span class="pill ok">Recibido completo</span>',con_diferencia:'<span class="pill bad">Recibido con faltante</span>'};
+
+/* ---------- ENTRADA ---------- */
+function vLogin(){const L=S.login;const t=TEAM.find(x=>x.id===L.who);
+ return `<div class="login"><div class="login-in"><span class="eyebrow">Operación · Viernes 13 de noviembre</span><h1>¿Quién entra?</h1>
+ <div class="who-grid">${TEAM.map(x=>`<button class="who-card" data-act="lwho" data-v="${x.id}" aria-pressed="${L.who===x.id}"><em>${x.role==='duena'?'Ve todo':'Operaciones'}</em><b>${x.name}</b><span>${x.desc}</span></button>`).join('')}
+ <button class="who-card" data-act="lwho" data-v="sucursal" aria-pressed="${L.who==='sucursal'}"><em>Tablet</em><b>Sucursal</b><span>Recibir envíos y hacer el cierre del día.</span></button></div>
+ ${L.who==='sucursal'?`<div class="stack" style="align-items:center"><span class="field"><label>¿Qué sucursal es esta tablet?</label></span><div class="chips" style="justify-content:center">${SUC.map(s=>`<button class="chip" data-act="lsuc" data-v="${s}" aria-pressed="${L.suc===s}">${s}</button>`).join('')}</div><button class="btn primary" data-act="lgoSuc">Abrir tablet de ${L.suc}</button></div>`:''}
+ ${t?`<div class="stack" style="align-items:center"><span class="field"><label>PIN de ${h(t.name)}</label></span><div class="dots">${[0,1,2,3].map(i=>`<i class="${i<L.pin.length?'on':''}"></i>`).join('')}</div><div class="pad">${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-act="lpin" data-v="${d}">${d}</button>`).join('')}<span></span><button data-act="lpin" data-v="0">0</button><button data-act="lpinDel" style="font-size:14px">Borrar</button></div></div>`:''}
+ <p class="hint">Prototipo: cualquier PIN de 4 dígitos funciona. Ricardo, Rebeca y Chris tienen el mismo acceso de Operaciones para poder cubrirse entre sí; la app registra quién hizo cada cosa.</p></div></div>`}
 
 /* ---------- OFICINA ---------- */
 function vResumen(){
- const enCamino=S.envios.filter(e=>e.status==='en_camino');
+ const hoy=SUC.filter(s=>S.plan[s].days.includes(TODAY));
+ const entregados=hoy.filter(s=>{const e=S.envios.find(x=>x.id===S.todayEnv[s]);return e&&e.status!=='en_camino'}).length;
  const bodega=S.packages.filter(p=>p.status==='bodega').length;
- const cierres=SUC.filter(s=>S.branch[s].cierre).length;
- const dif=SUC.reduce((a,s)=>a+weekDiff(s).v,0);
- const rows=SUC.map(s=>{const b=S.branch[s];const w=weekDiff(s);const pend=enCamino.filter(e=>e.suc===s).length;
-  const net=b.online?(b.sync<=15?`<span class="pill ok">Sincronizada · hace ${b.sync} min</span>`:`<span class="pill warn">Hace ${b.sync} min</span>`):`<span class="pill bad">Sin internet · ${Math.round(b.sync/60)} h</span>`;
+ const cierresN=SUC.filter(s=>S.branch[s].cierre).length;
+ const tot=SUC.reduce((a,s)=>{const w=weekDiff(s);a.f+=w.fv;a.s+=w.sv;return a},{f:0,s:0});
+ const rows=SUC.map(s=>{const b=S.branch[s];const w=weekDiff(s);const lv=lastVisit(s);
+  const net=b.online?(b.sync<=15?`<span class="pill ok">Hace ${b.sync} min</span>`:`<span class="pill warn">Hace ${b.sync} min</span>`):`<span class="pill bad">Sin internet · ${Math.max(1,Math.round(b.sync/60))} h</span>`;
   const q=s===S.suc&&S.queue.length?` <span class="pill warn">${S.queue.length} en espera</span>`:'';
-  const c=b.cierre?`<span class="pill ok">Cerrado</span> <span class="muted" style="font-size:13px">${h(b.cierre.user)} · ${b.cierre.t}</span>`:`<span class="pill neutral">Pendiente</span>`;
-  return `<tr><td><b>${s}</b></td><td>${net}${q}</td><td>${c}</td><td class="r">${pend?`<span class="pill warn">${pend}</span>`:'<span class="muted">—</span>'}</td><td class="r ${w.v<-5?'neg':''}">${money(w.v)}</td></tr>`}).join('');
- return `<div class="head"><div><span class="eyebrow">Viernes 13 de noviembre</span><h1>Resumen de operación</h1><p>Estado de las 7 sucursales, envíos en camino y diferencias de inventario.</p></div></div>
+  const c=b.cierre?`<span class="pill ok">${h(b.cierre.user)} · ${b.cierre.t}</span>`:`<span class="pill neutral">Pendiente</span>`;
+  const e=S.envios.find(x=>x.id===S.todayEnv[s]);const env=S.plan[s].days.includes(TODAY)?(e?ST[e.status]:'<span class="pill neutral">Por despachar</span>'):'<span class="muted">No toca hoy</span>';
+  const vis=lv?`${lv.ago===0?'Hoy':lv.ago===1?'Ayer':'Hace '+lv.ago+' días'} <span class="muted small">· ${visitOk(lv)}/${lv.results.length}</span>`:'<span class="muted">—</span>';
+  return `<tr><td><b>${s}</b></td><td>${net}${q}</td><td>${c}</td><td>${env}</td><td>${vis}</td><td class="r ${w.neto<-5?'neg':w.neto>0?'pos':''}">${moneyS(w.neto)}</td></tr>`}).join('');
+ return `<div class="head"><div><span class="eyebrow">Viernes 13 de noviembre</span><h1>Resumen de operación</h1><p>Estado de las 7 sucursales, la distribución de hoy, las visitas de supervisión y las diferencias de inventario.</p></div></div>
  <div class="kpis">
-  <div class="kpi"><span class="muted">Envíos en camino</span><b class="num">${enCamino.length}</b><span class="muted" style="font-size:13px">${enCamino.reduce((a,e)=>a+e.codes.length,0)} paquetes por confirmar</span></div>
-  <div class="kpi"><span class="muted">Paquetes listos en bodega</span><b class="num">${bodega}</b><span class="muted" style="font-size:13px">con etiqueta impresa</span></div>
-  <div class="kpi"><span class="muted">Cierres de hoy</span><b class="num">${cierres} / 7</b><span class="muted" style="font-size:13px">${SUC.filter(s=>!S.branch[s].cierre).join(', ')||'Todas cerraron'}</span></div>
-  <div class="kpi bad"><span class="muted">Faltante semana pasada</span><b class="num">${money(dif)}</b><span class="muted" style="font-size:13px">conteo vs. lo que debía quedar</span></div>
+  <div class="kpi"><span class="muted">Distribución de hoy</span><b class="num">${entregados} / ${hoy.length}</b><span class="muted">sucursales entregadas</span></div>
+  <div class="kpi"><span class="muted">Paquetes en bodega</span><b class="num">${bodega}</b><span class="muted">con etiqueta impresa</span></div>
+  <div class="kpi"><span class="muted">Cierres de hoy</span><b class="num">${cierresN} / 7</b><span class="muted">${SUC.filter(s=>!S.branch[s].cierre).join(', ')||'Todas cerraron'}</span></div>
+  <div class="kpi ${tot.f+tot.s<0?'bad':''}"><span class="muted">Neto semana pasada</span><b class="num">${moneyS(tot.f+tot.s)}</b><span class="muted">faltante ${money(tot.f)} · sobrante ${moneyS(tot.s)}</span></div>
  </div>
  <div class="grid2">
-  <section class="panel"><div class="panel-h"><h2>Sucursales</h2></div><div class="tbl-wrap"><table><thead><tr><th>Sucursal</th><th>Conexión de la tablet</th><th>Cierre del día</th><th class="r">Envíos por recibir</th><th class="r">Dif. semana</th></tr></thead><tbody>${rows}</tbody></table></div></section>
-  <section class="panel"><div class="panel-h"><h2>Actividad reciente</h2></div><div class="feed">${S.log.slice(0,9).map(l=>`<div><time>${l.t}</time><span${l.bad?' style="color:var(--terra)"':''}>${l.txt}</span></div>`).join('')}</div></section>
+  <section class="panel"><div class="panel-h"><h2>Sucursales</h2></div><div class="tbl-wrap"><table><thead><tr><th>Sucursal</th><th>Tablet</th><th>Cierre de hoy</th><th>Envío de hoy</th><th>Última visita</th><th class="r">Neto semana</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  <section class="panel"><div class="panel-h"><h2>Actividad reciente</h2></div><div class="feed">${S.log.slice(0,10).map(l=>`<div><time>${l.t}</time><span${l.bad?' style="color:var(--terra)"':''}>${l.txt}</span></div>`).join('')}</div></section>
  </div>`;
 }
 
@@ -300,14 +392,14 @@ function vIngreso(){
  const list=PRODUCTS.filter(p=>p.cat===S.ing.cat);
  const tot=Object.values(S.ing.qty).reduce((a,b)=>a+(+b||0),0);
  const cnt=Object.values(S.ing.qty).filter(v=>+v>0).length;
- return `<div class="head"><div><span class="eyebrow">Bodega central</span><h1>Ingreso de proveedor</h1><p>Cuente lo que llegó y anótelo. Al cerrar, queda registrado quién lo contó y a qué hora, y el inventario de bodega se actualiza.</p></div></div>
+ return `<div class="head"><div><span class="eyebrow">Bodega central · Inventario</span><h1>Ingreso de proveedor</h1><p>Cuente lo que llegó y anótelo. Al cerrar, queda registrado quién lo contó y a qué hora, y el inventario de bodega se actualiza.</p></div></div>
  <section class="panel stack">
   <div class="row"><div class="field" style="min-width:260px"><label for="prov">Proveedor</label><select id="prov" data-key="ing.prov">${['Distribuidora La Central','Bimbo','Lácteos del Valle','Snacks Centroamérica','Panadería Doña Tere'].map(x=>`<option${x===S.ing.prov?' selected':''}>${x}</option>`).join('')}</select></div>
   <div class="chips" style="margin-left:auto">${Object.entries(CATS).map(([k,v])=>`<button class="chip" data-act="ingcat" data-v="${k}" aria-pressed="${S.ing.cat===k}">${v[0]}</button>`).join('')}</div></div>
   <div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">En bodega ahora</th><th class="r">Unidades que llegaron</th></tr></thead><tbody>
-  ${list.map(p=>`<tr><td>${prodCell(p,p.cost==null?'<span style="color:var(--mustard)">Sin costo registrado</span>':'Costo '+money(p.cost))}</td><td class="r num">${S.stock[p.id]}</td><td class="r">${stepper('ing.qty.'+p.id,S.ing.qty[p.id])}</td></tr>`).join('')}
+  ${list.map(p=>`<tr><td>${prodCell(p,isOwner()?(p.cost==null?'<span style="color:var(--mustard)">Sin costo registrado</span>':'Costo '+money(p.cost)):'')}</td><td class="r num">${S.stock[p.id]}</td><td class="r">${stepper('ing.qty.'+p.id,S.ing.qty[p.id])}</td></tr>`).join('')}
   </tbody></table></div>
-  <div class="row" style="justify-content:flex-end;border-top:1px solid var(--line);padding-top:14px"><span class="muted" id="ingtot">${cnt} productos · ${tot} unidades</span><button class="btn primary" data-act="closeIng" ${tot?'':'disabled'} id="ingbtn">Cerrar ingreso con mi usuario</button></div>
+  <div class="row" style="justify-content:flex-end;border-top:1px solid var(--line);padding-top:14px"><span class="muted" id="ingtot">${cnt} productos · ${tot} unidades</span><button class="btn primary" data-act="closeIng" ${tot?'':'disabled'} id="ingbtn">Cerrar ingreso</button></div>
  </section>
  <section class="panel"><div class="panel-h"><h2>Ingresos cerrados</h2></div><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Proveedor</th><th class="r">Productos</th><th class="r">Unidades</th><th>Cerrado por</th></tr></thead><tbody>
  ${S.ingresos.map(i=>`<tr><td>${i.fecha}</td><td>${h(i.prov)}</td><td class="r">${i.prods}</td><td class="r">${i.units.toLocaleString('es')}</td><td>${h(i.by)}</td></tr>`).join('')}</tbody></table></div></section>`;
@@ -318,13 +410,13 @@ function labelHTML(pk){const p=P[pk.pid];return `<div class="label"><div class="
 function vPaquetes(){
  const p=P[S.pk.pid];const need=S.pk.n*S.pk.per;
  const groups={};S.packages.filter(x=>x.status==='bodega').forEach(x=>(groups[x.pid]=groups[x.pid]||[]).push(x));
- return `<div class="head"><div><span class="eyebrow">Bodega central</span><h1>Armar paquetes</h1><p>Cada paquete lleva un solo producto y su propia etiqueta con código de barras. La sucursal escanea cada paquete al recibirlo.</p></div></div>
+ return `<div class="head"><div><span class="eyebrow">Bodega central · Inventario</span><h1>Armar paquetes</h1><p>Cada paquete lleva un solo producto y su propia etiqueta con código de barras. La sucursal escanea cada paquete al recibirlo.</p></div></div>
  <div class="grid2b">
   <section class="panel stack">
    <h2>Nuevo lote</h2>
-   <div class="field"><label for="pkp">Producto</label><select id="pkp" data-key="pk.pid" data-rerender="1">${Object.entries(CATS).map(([k,v])=>`<optgroup label="${v[0]}">${PRODUCTS.filter(x=>x.cat===k).map(x=>`<option value="${x.id}"${x.id===S.pk.pid?' selected':''}>${h(x.name)}</option>`).join('')}</optgroup>`).join('')}</select></div>
-   <div class="row" style="gap:18px">
-    <div class="field"><label>Unidades por paquete</label><div class="row"><b class="num" style="font-size:22px">${S.pk.per}</b><span class="muted" style="font-size:13px">fijo para ${h(p.name)}</span></div></div>
+   <div class="field"><label for="pkp">Producto</label><select id="pkp" data-key="pk.pid">${Object.entries(CATS).map(([k,v])=>`<optgroup label="${v[0]}">${PRODUCTS.filter(x=>x.cat===k).map(x=>`<option value="${x.id}"${x.id===S.pk.pid?' selected':''}>${h(x.name)}</option>`).join('')}</optgroup>`).join('')}</select></div>
+   <div class="row" style="gap:22px">
+    <div class="field"><label>Unidades por paquete</label><div class="row"><b class="num" style="font-size:22px;color:var(--ink)">${S.pk.per}</b><span class="muted" style="font-size:13px">fijo para ${h(p.name)}</span></div></div>
     <div class="field"><label>Cantidad de paquetes</label>${stepper('pk.n',S.pk.n)}</div>
    </div>
    <div class="note">Se usarán <b class="num">${need}</b> unidades. Sueltas en bodega: <b class="num">${S.stock[p.id]}</b>.</div>
@@ -341,55 +433,114 @@ function vPaquetes(){
  </tbody></table></div></section>`;
 }
 
+function vDistrib(){
+ const own=isOwner();const hoy=SUC.filter(s=>S.plan[s].days.includes(TODAY));
+ const rows=hoy.map(s=>{const e=S.envios.find(x=>x.id===S.todayEnv[s]);let st,act='';
+  if(!e){const {missing}=pickFor(s);st=missing.length?`<span class="pill bad">Faltan paquetes: ${missing.map(([p,n])=>h(P[p].name)+' ('+n+')').join(', ')}</span>`:'<span class="pill neutral">Por despachar</span>';
+   act=missing.length?`<button class="btn" data-act="view" data-v="paquetes">Armar paquetes</button>`:`<button class="btn primary" data-act="dDesp" data-v="${s}">Despachar</button>`}
+  else if(e.status==='en_camino'){st=`${ST.en_camino}<br><span class="muted small">Salió ${e.salio.at} · ${h(e.salio.by)}</span>`;act=`<button class="btn primary" data-act="dEntr" data-v="${e.id}">Marcar entregado</button>`}
+  else if(e.status==='entregado'){st=`${ST.entregado}<br><span class="muted small">Dejado ${e.dejo.at} · ${h(e.dejo.by)}</span>`}
+  else st=`${ST[e.status]}<br><span class="muted small">${h(e.recibidoPor||'')} · ${e.recibidoAt||''}</span>`;
+  return `<tr><td><b>${s}</b>${e?`<br><span class="mono muted">${e.id}</span>`:''}</td><td class="small">${pedidoTxt(s)}</td><td>${st}</td><td class="r">${act}</td></tr>`}).join('');
+ const planRows=SUC.map(s=>{const pl=S.plan[s];
+  const days=DAYS.map((d,i)=>`<td class="r" style="padding-inline:3px">${own?`<button class="day ${pl.days.includes(i)?'on':''}" data-act="pday" data-s="${s}" data-v="${i}" aria-pressed="${pl.days.includes(i)}" aria-label="${DAYN[i]}">${d}</button>`:`<span class="day ${pl.days.includes(i)?'on':''}" style="display:inline-grid">${d}</span>`}</td>`).join('');
+  const edit=S.planEdit===s?`<tr><td colspan="10"><div class="edit-box"><b style="color:var(--ink)">Pedido base de ${s}</b><span class="muted small">Paquetes que se mandan cada día que le toca.</span>
+   ${Object.keys(pl.items).map(pid=>`<div class="row" style="justify-content:space-between">${prodCell(P[pid],P[pid].pack+' u por paquete')}${stepper('plan.'+s+'.items.'+pid,pl.items[pid])}</div>`).join('')}
+   <div class="row"><select id="planadd" data-key="planAdd" style="flex:1;min-width:0"><option value="">+ Agregar producto…</option>${PRODUCTS.filter(p=>!(p.id in pl.items)).map(p=>`<option value="${p.id}">${h(p.name)}</option>`).join('')}</select><button class="btn primary" data-act="planDone">Listo</button></div></div></td></tr>`:'';
+  return `<tr><td><b>${s}</b></td>${days}<td class="small">${pedidoTxt(s)}</td><td class="r">${own&&S.planEdit!==s?`<button class="btn" data-act="planEdit" data-v="${s}">Editar</button>`:''}</td></tr>${edit}`}).join('');
+ return `<div class="head"><div><span class="eyebrow">Viernes 13 de noviembre</span><h1>Distribución</h1><p>La dueña define qué días le toca a cada sucursal y qué se le manda. Quien distribuye despacha y marca la entrega; la sucursal confirma escaneando.</p></div></div>
+ <section class="panel"><div class="panel-h"><h2>Hoy · ${DAYN[TODAY]}</h2><span class="muted">${hoy.length} sucursales</span></div><div class="tbl-wrap"><table><thead><tr><th>Sucursal</th><th>Qué lleva (paquetes)</th><th>Estado</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>
+ <section class="panel"><div class="panel-h"><h2>Plan semanal</h2><span class="muted">${own?'Toque un día para activarlo o quitarlo':'Lo define la dueña'}</span></div><div class="tbl-wrap"><table><thead><tr><th>Sucursal</th>${DAYS.map((d,i)=>`<th class="r ${i===TODAY?'today':''}" style="padding-inline:3px">${d}</th>`).join('')}<th>Pedido base</th><th></th></tr></thead><tbody>${planRows}</tbody></table></div></section>`;
+}
+
 function vEnvios(){
  const avail={};S.packages.filter(x=>x.status==='bodega'&&!S.env.codes.includes(x.code)).forEach(x=>(avail[x.pid]=avail[x.pid]||[]).push(x));
- const inDraft={};S.env.codes.forEach(c=>{const pk=S.packages.find(x=>x.code===c);inDraft[pk.pid]=(inDraft[pk.pid]||0)+1});
- const st={en_camino:'<span class="pill warn">En camino</span>',recibido:'<span class="pill ok">Recibido completo</span>',con_diferencia:'<span class="pill bad">Recibido con faltante</span>'};
- return `<div class="head"><div><span class="eyebrow">Bodega central</span><h1>Envíos a sucursales</h1><p>Escanee o agregue los paquetes que salen. El envío queda "en camino" hasta que la sucursal los escanea al recibir.</p></div></div>
+ const inDraft={};S.env.codes.forEach(c=>{const pk=pkg(c);inDraft[pk.pid]=(inDraft[pk.pid]||0)+1});
+ return `<div class="head"><div><span class="eyebrow">Bodega central · Distribución</span><h1>Envíos</h1><p>Historial de todo lo que sale de bodega. Para algo fuera del plan, arme aquí un envío extra.</p></div></div>
+ <section class="panel"><div class="panel-h"><h2>Historial</h2></div><div class="tbl-wrap"><table><thead><tr><th>Envío</th><th>Sucursal</th><th>Salió de bodega</th><th>Lo dejó</th><th class="r">Paquetes</th><th>Estado</th><th>Recibió</th></tr></thead><tbody>
+ ${S.envios.map(e=>`<tr><td class="mono">${e.id}</td><td><b>${e.suc}</b></td><td>${e.fecha} ${e.salio.at}<br><span class="muted small">${h(e.salio.by)}</span></td><td>${e.dejo?`${e.dejo.at}<br><span class="muted small">${h(e.dejo.by)}</span>`:'<span class="muted">—</span>'}</td><td class="r">${e.codes.length}${e.faltan?` <span class="neg">(${e.faltan} no llegó)</span>`:''}</td><td>${ST[e.status]}</td><td>${e.recibidoPor?h(e.recibidoPor)+(e.recibidoAt?'<br><span class="muted small">'+e.recibidoAt+'</span>':''):'<span class="muted">—</span>'}</td></tr>`).join('')}
+ </tbody></table></div></section>
  <div class="grid2b">
   <section class="panel stack">
-   <h2>Nuevo envío</h2>
+   <h2>Envío extra</h2>
    <div class="field"><label>Sucursal destino</label><div class="chips">${SUC.map(s=>`<button class="chip" data-act="envsuc" data-v="${s}" aria-pressed="${S.env.suc===s}">${s}</button>`).join('')}</div></div>
    <div class="field"><label for="envscan">Escanear etiqueta</label><div class="row"><input id="envscan" data-key="env.scan" class="mono" placeholder="GRT001234" style="flex:1;min-width:0" value="${h(S.env.scan)}"><button class="btn" data-act="envScan">Agregar</button></div></div>
-   <div>${Object.keys(inDraft).length?`<table><tbody>${Object.entries(inDraft).map(([pid,c])=>`<tr><td>${prodCell(P[pid])}</td><td class="r num"><b>${c}</b> paq · ${c*P[pid].pack} u</td><td class="r"><button class="btn" data-act="envDel" data-v="${pid}" aria-label="Quitar uno">−</button></td></tr>`).join('')}</tbody></table>`:'<div class="note">Todavía no hay paquetes en este envío.</div>'}</div>
+   <div>${Object.keys(inDraft).length?`<table><tbody>${Object.entries(inDraft).map(([pid,c])=>`<tr><td>${prodCell(P[pid])}</td><td class="r num"><b>${c}</b> paq · ${c*P[pid].pack} u</td><td class="r"><button class="x" data-act="envDel" data-v="${pid}" aria-label="Quitar uno">×</button></td></tr>`).join('')}</tbody></table>`:'<div class="note">Todavía no hay paquetes en este envío.</div>'}</div>
    <button class="btn primary" data-act="despachar" ${S.env.codes.length?'':'disabled'}>Despachar a ${S.env.suc} · ${S.env.codes.length} paquetes</button>
   </section>
   <section class="panel" style="min-width:0"><div class="panel-h"><h2>Disponibles en bodega</h2><span class="muted">Toque para agregar un paquete</span></div><div class="tbl-wrap"><table><tbody>
-   ${Object.entries(avail).map(([pid,arr])=>`<tr><td>${prodCell(P[pid],arr[0].units+' u por paquete')}</td><td class="r num">${arr.length} disponibles</td><td class="r"><button class="btn" data-act="envAdd" data-v="${pid}">+ 1 paquete</button></td></tr>`).join('')||'<tr><td class="muted">No hay paquetes disponibles. Ármelos en "Armar paquetes".</td></tr>'}
+   ${Object.entries(avail).map(([pid,arr])=>`<tr><td>${prodCell(P[pid],arr[0].units+' u por paquete')}</td><td class="r num">${arr.length} disponibles</td><td class="r"><button class="btn" data-act="envAdd" data-v="${pid}">+ 1</button></td></tr>`).join('')||'<tr><td class="muted">No hay paquetes disponibles. Ármelos en "Armar paquetes".</td></tr>'}
   </tbody></table></div></section>
+ </div>`;
+}
+
+function vSuper(){
+ const own=isOwner();const todayV=S.visits.find(v=>v.ago===0);
+ const strip=DAYS.map((d,i)=>{const v=S.visits.find(x=>x.ago===TODAY-i);return `<div class="wk ${i===TODAY?'today':''}"><span class="d">${DAYN[i].slice(0,3)}${i===TODAY?' · hoy':''}</span><b>${v?v.suc:(i<TODAY?'Sin visita':i===TODAY?'Pendiente':'—')}</b>${v?`<span class="pill ${visitOk(v)<v.results.length?'warn':'ok'}">${visitOk(v)} de ${v.results.length} bien</span>`:''}</div>`}).join('');
+ let today;
+ if(S.visit){const V=S.visit;const answered=S.checklist.every((_,i)=>V.res[i]);const counted=V.conteo.every(pid=>V.counts[pid]!==undefined&&V.counts[pid]!=='');
+  today=`<div class="stack"><div class="panel-h" style="margin:0"><h2>Visita a ${V.suc}</h2><button class="btn" data-act="vCancel">Cancelar</button></div>
+  <div>${S.checklist.map((item,i)=>`<div class="ck"><span>${h(item)}</span><div class="okbad"><button data-act="ck" data-i="${i}" data-v="ok" aria-pressed="${V.res[i]==='ok'}">Bien</button><button data-act="ck" data-i="${i}" data-v="mal" aria-pressed="${V.res[i]==='mal'}">Hay problema</button></div>${V.res[i]==='mal'?`<input data-key="visit.notes.${i}" value="${h(V.notes[i]||'')}" placeholder="¿Qué encontró? ¿Qué se hizo?">`:''}</div>`).join('')}</div>
+  <div class="stack" style="gap:6px"><h3>Conteo sorpresa</h3><span class="muted small">Cuente estos productos en la sucursal. La diferencia contra el sistema se ve al terminar.</span>
+  ${V.conteo.map(pid=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:8px 0">${prodCell(P[pid])}${stepper('visit.counts.'+pid,V.counts[pid])}</div>`).join('')}</div>
+  <button class="btn primary" data-act="vFinish" ${answered&&counted?'':'disabled'}>${answered&&counted?'Terminar visita':'Responda todo el checklist y el conteo'}</button></div>`}
+ else if(todayV){const difs=todayV.conteo.map(c=>c.contado-c.sistema);
+  today=`<div class="stack"><h2>Hoy: ${todayV.suc}</h2><p class="muted" style="margin:0">${h(todayV.by)} terminó la visita a las ${todayV.at}. ${visitOk(todayV)} de ${todayV.results.length} puntos bien.</p>
+  ${todayV.results.filter(r=>!r.ok).map(r=>`<div class="err">${h(r.item)}${r.note?': '+h(r.note):''}</div>`).join('')}
+  <div class="note">Conteo sorpresa: ${todayV.conteo.map((c,i)=>`${h(P[c.pid].name)} ${difs[i]===0?'cuadra':`<b class="${difs[i]<0?'neg':'pos'}">${difs[i]>0?'+':''}${difs[i]}</b>`}`).join(' · ')}</div></div>`}
+ else{const sorted=SUC.slice().sort((a,b)=>(lastVisit(b)?.ago??99)-(lastVisit(a)?.ago??99));const sug=sorted[0];
+  today=`<div class="stack"><h2>Visita de hoy</h2><p class="muted" style="margin:0">Se sugiere la sucursal que lleva más días sin visita.</p>
+  <div class="tbl-wrap"><table><tbody>${sorted.map(s=>{const lv=lastVisit(s);return `<tr><td><b>${s}</b>${s===sug?' <span class="pill bad">Sugerida</span>':''}</td><td class="muted">${lv?`Última: ${lv.fecha} · hace ${lv.ago} días`:'Nunca'}</td><td class="r"><button class="btn ${s===sug?'primary':''}" data-act="vStart" data-v="${s}">Empezar</button></td></tr>`}).join('')}</tbody></table></div></div>`}
+ const hist=S.visits.slice().sort((a,b)=>a.ago-b.ago).map(v=>{const probs=v.results.filter(r=>!r.ok);return `<tr><td>${v.fecha}</td><td><b>${v.suc}</b></td><td>${h(v.by)}</td><td><span class="pill ${probs.length?'warn':'ok'}">${visitOk(v)} de ${v.results.length}</span></td><td class="small">${probs.map(r=>h(r.note||r.item)).join('<br>')||'<span class="muted">—</span>'}</td><td class="small">${v.conteo.map(c=>{const d=c.contado-c.sistema;return `${h(P[c.pid].name)} ${d===0?'<span class="muted">cuadra</span>':`<b class="${d<0?'neg':'pos'}">${d>0?'+':''}${d}</b>`}`}).join('<br>')}</td></tr>`}).join('');
+ return `<div class="head"><div><span class="eyebrow">Supervisión</span><h1>Visitas a sucursales</h1><p>Cada día se visita una sucursal: se revisa el checklist y se hace un conteo sorpresa de algunos productos.</p></div></div>
+ <div class="week-strip">${strip}</div>
+ <div class="grid2">
+  <section class="panel">${today}</section>
+  <section class="panel stack"><div class="panel-h" style="margin:0"><h2>Checklist</h2><span class="muted">${own?'Se usa en todas las sucursales':'Lo define la dueña'}</span></div>
+   <div>${S.checklist.map((c,i)=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:9px 0;flex-wrap:nowrap"><span>${h(c)}</span>${own&&!S.visit?`<button class="x" data-act="ckDel" data-v="${i}" aria-label="Quitar">×</button>`:''}</div>`).join('')}</div>
+   ${own&&!S.visit?`<div class="row"><input id="newitem" data-key="newItem" value="${h(S.newItem)}" placeholder="Nuevo punto a revisar" style="flex:1;min-width:0"><button class="btn" data-act="ckAdd">Agregar</button></div>`:''}
+  </section>
  </div>
- <section class="panel"><div class="panel-h"><h2>Envíos</h2></div><div class="tbl-wrap"><table><thead><tr><th>Envío</th><th>Sucursal</th><th>Salió</th><th class="r">Paquetes</th><th>Estado</th><th>Recibió</th></tr></thead><tbody>
- ${S.envios.map(e=>`<tr><td class="mono">${e.id}</td><td><b>${e.suc}</b></td><td>${e.fecha}</td><td class="r">${e.codes.length}${e.faltan?` <span class="neg">(${e.faltan} no llegó)</span>`:''}</td><td>${st[e.status]}</td><td>${e.recibidoPor?h(e.recibidoPor)+(e.recibidoAt?' · '+e.recibidoAt:''):'<span class="muted">—</span>'}</td></tr>`).join('')}
- </tbody></table></div></section>`;
+ <section class="panel"><div class="panel-h"><h2>Historial de visitas</h2></div><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Sucursal</th><th>Supervisor</th><th>Resultado</th><th>Problemas</th><th>Conteo sorpresa</th></tr></thead><tbody>${hist}</tbody></table></div></section>`;
 }
 
 function vSemana(){
- const w=S.week[S.wsuc];let tot={ini:0,ent:0,ven:0,dif:0,difv:0,cEnv:0,cIni:0};
+ const w=S.week[S.wsuc];let tot={ven:0,cEnv:0,cIni:0,fv:0,sv:0,fu:0,su:0};
  const body=Object.entries(CATS).map(([k,v])=>`<tr class="cat-row"><td colspan="16">${v[0]}</td></tr>`+PRODUCTS.filter(p=>p.cat===k).map(p=>{const r=w[p.id];const e=r.ent.reduce((a,b)=>a+b,0),vv=r.ven.reduce((a,b)=>a+b,0),d=r.contado-r.esperado,c=p.cost||0;
-  tot.ini+=r.ini;tot.ent+=e;tot.ven+=vv;tot.dif+=d;tot.difv+=d*c;tot.cEnv+=e*c;tot.cIni+=r.ini*c;
-  return `<tr><td style="white-space:nowrap">${h(p.name)}${p.cost==null?' <span class="pill warn" title="Sin costo">sin costo</span>':''}</td><td class="r">${r.ini}</td><td class="r">${e||'<span class="muted">0</span>'}</td>${r.ven.map(x=>`<td class="r muted">${x}</td>`).join('')}<td class="r"><b>${vv}</b></td><td class="r">${r.esperado}</td><td class="r">${r.contado}</td><td class="r ${d<0?'neg':''}">${d||'<span class="muted">0</span>'}</td><td class="r ${d<0?'neg':''}">${d?money(d*c):'<span class="muted">—</span>'}</td></tr>`}).join('')).join('');
- return `<div class="head"><div><span class="eyebrow">Semana 45 · 2 al 8 de noviembre</span><h1>Cierre semanal</h1><p>Se arma solo con los envíos recibidos y los cierres diarios de la sucursal. Reemplaza el cuadro RETAIL de Excel.</p></div><button class="btn" disabled title="Disponible en la versión real">Exportar a Excel</button></div>
- <div class="chips">${SUC.map(s=>{const d=weekDiff(s).v;return `<button class="chip" data-act="wsuc" data-v="${s}" aria-pressed="${S.wsuc===s}">${s}${d<-5?` · <span style="color:${S.wsuc===s?'inherit':'var(--terra)'}">${money(d)}</span>`:''}</button>`}).join('')}</div>
+  tot.ven+=vv;tot.cEnv+=e*c;tot.cIni+=r.ini*c;if(d<0){tot.fv+=d*c;tot.fu+=d}else{tot.sv+=d*c;tot.su+=d}
+  const cls=d<0?'neg':d>0?'pos':'';
+  return `<tr><td style="white-space:nowrap">${h(p.name)}${p.cost==null?' <span class="pill warn">sin costo</span>':''}</td><td class="r">${r.ini}</td><td class="r">${e||'<span class="muted">0</span>'}</td>${r.ven.map(x=>`<td class="r muted">${x}</td>`).join('')}<td class="r"><b>${vv}</b></td><td class="r">${r.esperado}</td><td class="r">${r.contado}</td><td class="r ${cls}">${d?(d>0?'+':'')+d:'<span class="muted">0</span>'}</td><td class="r ${cls}">${d?moneyS(d*c):'<span class="muted">—</span>'}</td></tr>`}).join('')).join('');
+ return `<div class="head"><div><span class="eyebrow">Semana 45 · 2 al 8 de noviembre</span><h1>Cierre semanal</h1><p>Se arma solo con los envíos recibidos y los cierres diarios. El sobrante de un producto cubre el faltante de otro; el neto es lo que realmente falta.</p></div><button class="btn" disabled title="Disponible en la versión real">Exportar a Excel</button></div>
+ <div class="chips">${SUC.map(s=>{const d=weekDiff(s).neto;return `<button class="chip" data-act="wsuc" data-v="${s}" aria-pressed="${S.wsuc===s}">${s}${d<-5?` · <span style="color:${S.wsuc===s?'inherit':'var(--terra)'}">${money(d)}</span>`:''}</button>`}).join('')}</div>
  <div class="kpis">
-  <div class="kpi"><span class="muted">Costo enviado</span><b class="num">${money(tot.cEnv)}</b></div>
-  <div class="kpi"><span class="muted">Costo inventario inicial</span><b class="num">${money(tot.cIni)}</b></div>
-  <div class="kpi"><span class="muted">Unidades vendidas</span><b class="num">${tot.ven.toLocaleString('es')}</b></div>
-  <div class="kpi ${tot.difv<0?'bad':''}"><span class="muted">Faltante en conteo</span><b class="num">${money(tot.difv)}</b><span class="muted" style="font-size:13px">${tot.dif} unidades</span></div>
+  <div class="kpi"><span class="muted">Costo enviado</span><b class="num">${money(tot.cEnv)}</b><span class="muted">inventario inicial ${money(tot.cIni)}</span></div>
+  <div class="kpi bad"><span class="muted">Faltante</span><b class="num">${money(tot.fv)}</b><span class="muted">${tot.fu} unidades</span></div>
+  <div class="kpi"><span class="muted">Sobrante</span><b class="num" style="color:var(--olive)">${moneyS(tot.sv)}</b><span class="muted">+${tot.su} unidades</span></div>
+  <div class="kpi ${tot.fv+tot.sv<0?'bad':''}"><span class="muted">Neto</span><b class="num">${moneyS(tot.fv+tot.sv)}</b><span class="muted">faltante menos sobrante</span></div>
  </div>
- <section class="panel" style="padding:0"><div class="tbl-wrap"><table style="font-size:14px"><thead><tr><th>Producto</th><th class="r">Inicial</th><th class="r">Entró</th>${DAYS.map(d=>`<th class="r">${d}</th>`).join('')}<th class="r">Vendido</th><th class="r">Debía quedar</th><th class="r">Contaron</th><th class="r">Dif.</th><th class="r">Dif. $</th></tr></thead><tbody>${body}</tbody></table></div></section>
- <p class="hint" style="text-align:left">Ventas por día según la cinta que ingresa la sucursal en su cierre. "Debía quedar" = inicial + entró − vendido. La sucursal nunca ve esta columna. Los costos de este prototipo son de ejemplo.</p>`;
+ <section class="panel" style="border-top:0;padding-top:0"><div class="tbl-wrap"><table style="font-size:14px"><thead><tr><th>Producto</th><th class="r">Inicial</th><th class="r">Entró</th>${DAYS.map(d=>`<th class="r">${d}</th>`).join('')}<th class="r">Vendido</th><th class="r">Debía quedar</th><th class="r">Contaron</th><th class="r">Dif.</th><th class="r">Dif. $</th></tr></thead><tbody>${body}</tbody></table></div></section>
+ <p class="hint" style="text-align:left">Ventas por día según la cinta que ingresa la sucursal. "Debía quedar" = inicial + entró − vendido; solo la dueña ve esta pantalla. Los costos de este prototipo son de ejemplo.</p>`;
+}
+
+function vEquipo(){
+ const rows=TEAM.map(t=>`<tr><td><b>${t.name}</b></td><td>${t.perfil}</td><td class="small">${t.role==='duena'?'Todo: resumen, costos, cierre semanal, plan de distribución, checklist y equipo.':'Ingresos, paquetes, distribución, envíos y supervisión. No ve costos ni dinero.'}</td></tr>`).join('');
+ const suc=SUC.map(s=>`<tr><td><b>${SUC_USERS[s].join(', ')}</b></td><td>Tablet ${s}</td><td class="small">Recibir envíos y cierre del día. No ve el inventario esperado.</td></tr>`).join('');
+ return `<div class="head"><div><span class="eyebrow">Accesos</span><h1>Equipo</h1><p>Ricardo, Rebeca y Chris comparten el perfil de Operaciones para poder cubrirse entre sí. Cada acción queda firmada con el nombre de quien la hizo.</p></div><button class="btn" disabled title="Disponible en la versión real">Agregar persona</button></div>
+ <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Perfil</th><th>Qué puede hacer</th></tr></thead><tbody>${rows}${suc}</tbody></table></div></section>`;
 }
 
 function office(){
- const views={resumen:['Resumen',vResumen],ingreso:['Ingreso de proveedor',vIngreso],paquetes:['Armar paquetes',vPaquetes],envios:['Envíos',vEnvios],semana:['Cierre semanal',vSemana]};
- const counts={envios:S.envios.filter(e=>e.status==='en_camino').length,paquetes:S.packages.filter(p=>p.status==='bodega').length};
- return `<div class="office"><nav class="nav" aria-label="Oficina central">${Object.entries(views).map(([k,v])=>`<button data-act="view" data-v="${k}" aria-current="${S.view===k}">${v[0]}${counts[k]?`<span class="count">${counts[k]}</span>`:''}</button>`).join('')}</nav><main class="main">${views[S.view][1]()}</main></div>`;
+ const views={resumen:vResumen,ingreso:vIngreso,paquetes:vPaquetes,distribucion:vDistrib,envios:vEnvios,supervision:vSuper,semana:vSemana,equipo:vEquipo};
+ const nav=NAV[S.user.role];
+ const counts={paquetes:S.packages.filter(p=>p.status==='bodega').length,distribucion:SUC.filter(s=>S.plan[s].days.includes(TODAY)&&!S.todayEnv[s]).length,supervision:S.visits.some(v=>v.ago===0)?0:1};
+ return `<div class="office"><nav class="nav" aria-label="Secciones">${nav.map(([k,l])=>`<button data-act="view" data-v="${k}" aria-current="${S.view===k}">${l}${counts[k]?`<span class="count">${counts[k]}</span>`:''}</button>`).join('')}</nav><main class="main">${views[S.view]()}</main></div>`;
 }
 
 /* ---------- TABLET ---------- */
+const pendingFor=s=>S.envios.filter(e=>e.suc===s&&(e.status==='en_camino'||e.status==='entregado')&&!e.localDone);
 function tHome(){
- const pend=S.envios.filter(e=>e.suc===S.suc&&e.status==='en_camino'&&!e.localDone).length;const b=S.branch[S.suc];
- return `<div><span class="eyebrow">Viernes 13 de noviembre</span><h1 style="font-size:32px">¿Qué va a hacer?</h1></div>
+ const pend=pendingFor(S.suc).length;const b=S.branch[S.suc];
+ return `<div><span class="eyebrow">Viernes 13 de noviembre</span><h1>¿Qué va a hacer?</h1></div>
  <div class="big-actions">
   <button class="big" data-act="tview" data-v="recibir"><span class="ico">${icon.scan}</span><b>Recibir envío</b><span class="muted" style="font-size:16px">Escanee cada paquete que llegó de oficina central.</span>${pend?`<span class="badge">${pend} por recibir</span>`:''}</button>
   <button class="big" data-act="tview" data-v="cierre"><span class="ico">${icon.moon}</span><b>Cierre del día</b><span class="muted" style="font-size:16px">${b.cierre?'Ya cerró hoy: '+h(b.cierre.user)+' a las '+b.cierre.t:'Anote lo vendido según la cinta y cuente lo que queda.'}</span>${b.cierre?'<span class="badge" style="background:var(--olive)">Hecho</span>':''}</button>
@@ -397,29 +548,29 @@ function tHome(){
  ${S.queue.length?`<div class="flash warn">${S.queue.length} registro(s) guardados en la tablet. Se enviarán a oficina central cuando vuelva el internet.</div>`:''}`;
 }
 function tRecibir(){
- const list=S.envios.filter(e=>e.suc===S.suc&&e.status==='en_camino'&&!e.localDone);
- return `<button class="back" data-act="tview" data-v="home">← Inicio</button><h1 style="font-size:30px">Envíos por recibir</h1>
- ${list.map(e=>`<button class="env-card" data-act="startScan" data-v="${e.id}"><span class="ico" style="width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--mustard-soft);color:var(--mustard)">${icon.box}</span><span style="display:flex;flex-direction:column"><b>${e.id}</b><span class="muted">Salió ${e.fecha} · ${e.codes.length} paquetes</span></span><span class="tbtn primary" style="margin-left:auto;display:inline-flex;align-items:center">Empezar a escanear</span></button>`).join('')||`<div class="note" style="font-size:17px">No hay envíos en camino para ${S.suc}. Cuando oficina central despache uno, aparecerá aquí.</div>`}`;
+ const list=pendingFor(S.suc);
+ return `<button class="back" data-act="tview" data-v="home">← Inicio</button><h1>Envíos por recibir</h1>
+ ${list.map(e=>`<button class="env-card" data-act="startScan" data-v="${e.id}"><span class="ico" style="width:52px;height:52px;display:grid;place-items:center">${icon.box}</span><span style="display:flex;flex-direction:column"><b>${e.id}</b><span class="muted">${e.dejo?`Lo dejó ${h(e.dejo.by)} a las ${e.dejo.at}`:`En camino · salió ${e.salio.at}`} · ${e.codes.length} paquetes</span></span><span class="tbtn primary" style="margin-left:auto;display:inline-flex;align-items:center">Escanear</span></button>`).join('')||`<div class="note" style="font-size:17px">No hay envíos en camino para ${S.suc}. Cuando oficina central despache uno, aparecerá aquí.</div>`}`;
 }
 function tScan(){
  const sc=S.scan;const e=S.envios.find(x=>x.id===sc.envio);
  if(sc.confirm){const miss=e.codes.length-sc.scanned.length;
-  return `<button class="back" data-act="scanBack">← Seguir escaneando</button><h1 style="font-size:30px">Confirmar recepción</h1>
-  <div class="flash ${miss?'bad':'ok'}" style="font-size:20px">${miss?`Faltan ${miss} paquete(s) por escanear. Se reportarán a oficina central como <u>no recibidos</u>.`:`Escaneó los ${e.codes.length} paquetes del envío.`}</div>
+  return `<button class="back" data-act="scanBack">← Seguir escaneando</button><h1>Confirmar recepción</h1>
+  <div class="flash ${miss?'bad':'ok'}" style="font-size:20px">${miss?`Faltan ${miss} paquete(s) por escanear. Se reportarán a oficina central como no recibidos.`:`Escaneó los ${e.codes.length} paquetes del envío.`}</div>
   ${sc.damaged.length?`<div class="flash warn">${sc.damaged.length} paquete(s) marcados como dañados.</div>`:''}
   <p class="muted" style="font-size:16px;margin:0">Al aprobar, su nombre queda registrado como quien recibió este envío.</p>
   <div class="row"><button class="tbtn primary" data-act="approveRec">Aprobar con mi PIN</button><button class="tbtn ghost" data-act="scanBack">Volver</button></div>`}
  return `<button class="back" data-act="tview" data-v="recibir">← Envíos</button>
- <div class="row" style="justify-content:space-between"><h1 style="font-size:30px">Recibiendo ${e.id}</h1><div style="text-align:right"><div class="counter num">${sc.scanned.length}<span class="muted" style="font-size:24px"> / ${e.codes.length}</span></div><span class="muted">paquetes escaneados</span></div></div>
+ <div class="row" style="justify-content:space-between"><h1>Recibiendo ${e.id}</h1><div style="text-align:right"><div class="counter num">${sc.scanned.length}<span class="muted" style="font-size:26px"> / ${e.codes.length}</span></div><span class="muted">paquetes escaneados</span></div></div>
  <div class="scan-grid">
   <div class="stack">
    <div class="cam"><div class="frame"><div class="laser"></div></div><div class="cap">Apunte la cámara a la etiqueta</div></div>
-   <div class="row"><button class="tbtn primary" data-act="simScan" style="flex:1">Simular escaneo</button><button class="tbtn warnb" data-act="simWrong">Probar etiqueta de otra sucursal</button></div>
+   <div class="row"><button class="tbtn primary" data-act="simScan" style="flex:1">Simular escaneo</button><button class="tbtn warnb" data-act="simWrong">Etiqueta de otra sucursal</button></div>
    <div class="row"><input id="mancode" class="mono" placeholder="O escriba el código: GRT001234" style="flex:1;min-width:0;height:52px;font-size:16px"><button class="tbtn" data-act="manScan">OK</button></div>
   </div>
   <div class="stack">
    ${sc.msg?`<div class="flash ${sc.msg.k}">${sc.msg.t}</div>`:''}
-   <div class="scanned">${sc.scanned.slice().reverse().map(c=>{const pk=S.packages.find(x=>x.code===c);const d=sc.damaged.includes(c);return `<div class="${d?'dmg':''}">${thumb(P[pk.pid])}<span><b>${h(P[pk.pid].name)}</b> · ${pk.units} u<br><span class="mono muted">${c}</span></span><button data-act="dmg" data-v="${c}">${d?'Quitar daño':'Marcar dañado'}</button></div>`}).join('')||'<div class="note" style="font-size:16px">Aún no ha escaneado paquetes.</div>'}</div>
+   <div class="scanned">${sc.scanned.slice().reverse().map(c=>{const pk=pkg(c);const d=sc.damaged.includes(c);return `<div class="${d?'dmg':''}">${thumb(P[pk.pid])}<span><b>${h(P[pk.pid].name)}</b> · ${pk.units} u<br><span class="mono muted">${c}</span></span><button data-act="dmg" data-v="${c}">${d?'Quitar daño':'Marcar dañado'}</button></div>`}).join('')||'<div class="note" style="font-size:16px;border:0">Aún no ha escaneado paquetes.</div>'}</div>
    <button class="tbtn primary" data-act="finishScan" ${sc.scanned.length?'':'disabled'}>Terminar recepción</button>
   </div>
  </div>`;
@@ -427,49 +578,52 @@ function tScan(){
 function tCierre(){
  const cd=S.cd;const list=PRODUCTS.filter(p=>p.cat===cd.cat);const done=Object.keys(cd.quedan).filter(k=>cd.quedan[k]!=='').length;
  if(cd.confirm){const vend=Object.values(cd.vend).reduce((a,b)=>a+(+b||0),0);
-  return `<button class="back" data-act="cdBack">← Volver al conteo</button><h1 style="font-size:30px">Cerrar el día</h1>
+  return `<button class="back" data-act="cdBack">← Volver al conteo</button><h1>Cerrar el día</h1>
   <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="kpi"><span class="muted">Productos contados</span><b>${done} / ${PRODUCTS.length}</b></div><div class="kpi"><span class="muted">Unidades vendidas</span><b>${vend}</b></div><div class="kpi"><span class="muted">Total de la cinta</span><b>$${(+cd.cinta||0).toFixed(2)}</b></div></div>
   <p class="muted" style="font-size:16px;margin:0">Una vez cerrado ya no se puede cambiar desde la tablet. Si hay un error, avise a oficina central.</p>
   <div class="row"><button class="tbtn primary" data-act="approveCd">Cerrar con mi PIN</button><button class="tbtn ghost" data-act="cdBack">Volver</button></div>`}
  return `<button class="back" data-act="tview" data-v="home">← Inicio</button>
- <div class="row" style="justify-content:space-between"><div><h1 style="font-size:30px">Cierre del día</h1><p class="muted" style="margin:4px 0 0;font-size:16px">Anote lo vendido según la cinta y <b>cuente físicamente</b> cuánto queda de cada producto.</p></div>
+ <div class="row" style="justify-content:space-between;align-items:flex-end"><div><h1>Cierre del día</h1><p class="muted" style="margin:4px 0 0;font-size:16px">Anote lo vendido según la cinta y <b>cuente físicamente</b> cuánto queda de cada producto.</p></div>
  <div style="min-width:220px"><div class="row" style="justify-content:space-between"><span class="muted">Contados</span><b id="cdprog">${done} de ${PRODUCTS.length}</b></div><div class="progress"><i id="cdbar" style="width:${done/PRODUCTS.length*100}%"></i></div></div></div>
  <div class="chips">${Object.entries(CATS).map(([k,v])=>{const c=PRODUCTS.filter(p=>p.cat===k);const d=c.filter(p=>cd.quedan[p.id]!==undefined&&cd.quedan[p.id]!=='').length;return `<button class="chip" style="padding:10px 16px;font-size:15px" data-act="cdcat" data-v="${k}" aria-pressed="${cd.cat===k}">${v[0]} · ${d}/${c.length}</button>`}).join('')}</div>
  <div>${list.map(p=>`<div class="cd-row ${cd.quedan[p.id]!==undefined&&cd.quedan[p.id]!==''?'done':''}" data-row="${p.id}"><div class="prod">${thumb(p)}<b>${h(p.name)}</b></div><div><div class="lab">Vendidos (cinta)</div>${stepper('cd.vend.'+p.id,cd.vend[p.id],'t-step')}</div><div><div class="lab">Quedan (contados)</div>${stepper('cd.quedan.'+p.id,cd.quedan[p.id],'t-step')}</div></div>`).join('')}</div>
  <div class="sticky-foot"><div class="field"><label for="cinta">Total de la cinta ($)</label><input id="cinta" data-key="cd.cinta" inputmode="decimal" value="${h(cd.cinta)}" placeholder="0.00" style="height:52px;font-size:18px;width:160px"></div>
- <button class="tbtn ghost" data-act="cdFill" title="Solo para probar el prototipo">Llenar ejemplo (prototipo)</button>
+ <button class="tbtn ghost" data-act="cdFill" title="Solo para probar el prototipo">Llenar ejemplo</button>
  <button class="tbtn primary" data-act="cdConfirm" style="margin-left:auto" id="cdgo" ${done===PRODUCTS.length?'':'disabled'}>${done===PRODUCTS.length?'Revisar y cerrar':`Faltan ${PRODUCTS.length-done} por contar`}</button></div>`;
 }
 function tablet(){
  const views={home:tHome,recibir:tRecibir,scan:tScan,cierre:tCierre};
  return `<div class="tab-stage">
- <div class="row" style="width:100%;max-width:1080px;justify-content:space-between"><div class="chips">${SUC.map(s=>`<button class="chip" data-act="tsuc" data-v="${s}" aria-pressed="${S.suc===s}">${s}</button>`).join('')}</div></div>
  <div class="device"><div class="t-top"><span class="who">${S.suc}</span><span class="sub">Tablet de sucursal</span>
  <button class="net ${S.online?'':'off'}" data-act="net" title="Toque para simular que se va o vuelve el internet"><i></i>${S.online?'En línea':'Sin internet'}${S.queue.length?` · ${S.queue.length} en espera`:''}</button></div>
  <div class="t-body">${views[S.tview]()}</div></div>
- <p class="hint">Toque el indicador "En línea" para simular que se cae el internet: la tablet guarda todo y lo envía cuando vuelve la señal. La sucursal nunca ve cuánto inventario debería tener.</p></div>`;
+ <p class="hint">Toque "En línea" para simular que se cae el internet: la tablet guarda todo y lo envía cuando vuelve la señal. La sucursal nunca ve cuánto inventario debería tener.</p></div>`;
 }
 
 /* ---------- acciones con registro ---------- */
 function applyRec(p){const e=S.envios.find(x=>x.id===p.envio);let miss=0;
- e.codes.forEach(c=>{const pk=S.packages.find(x=>x.code===c);if(p.scanned.includes(c))pk.status=p.damaged.includes(c)?'dañado':'recibido';else{pk.status='faltante';miss++}});
+ e.codes.forEach(c=>{const pk=pkg(c);if(p.scanned.includes(c))pk.status=p.damaged.includes(c)?'dañado':'recibido';else{pk.status='faltante';miss++}});
  e.status=miss||p.damaged.length?'con_diferencia':'recibido';e.faltan=miss||0;e.recibidoPor=p.user;e.recibidoAt=p.at;
- S.log.unshift({t:p.at,txt:`${h(p.user)} recibió <b>${e.id}</b> en ${e.suc}${miss?` · <b class="neg">${miss} paquete(s) no llegaron</b>`:' completo'}${p.damaged.length?` · ${p.damaged.length} dañado(s)`:''}`,bad:!!(miss||p.damaged.length)})}
+ S.log.unshift({t:p.at,txt:`${h(p.user)} recibió <b>${e.id}</b> en ${e.suc}${miss?` · <b>${miss} paquete(s) no llegaron</b>`:' completo'}${p.damaged.length?` · ${p.damaged.length} dañado(s)`:''}`,bad:!!(miss||p.damaged.length)})}
 function applyCd(p){S.branch[p.suc].cierre={user:p.user,t:p.at};S.log.unshift({t:p.at,txt:`${h(p.user)} cerró el día en <b>${p.suc}</b> · cinta $${(+p.cinta||0).toFixed(2)}`})}
 function commit(type,payload){if(S.online){(type==='rec'?applyRec:applyCd)(payload);S.branch[S.suc].sync=0;return true}S.queue.push({type,payload});return false}
-const nowT=()=>{const d=new Date();let hh=d.getHours(),mm=String(d.getMinutes()).padStart(2,'0');const ap=hh>=12?'pm':'am';hh=hh%12||12;return `${hh}:${mm} ${ap}`};
+function dispatch(suc,codes,by){const id='ENV-'+String(++envSeq).padStart(4,'0');const at=nowT();codes.forEach(c=>{const pk=pkg(c);pk.status='en_camino';pk.envio=id;pk.suc=suc});
+ S.envios.unshift({id,suc,fecha:'13 nov',codes:[...codes],status:'en_camino',salio:{by,at},dejo:null});S.log.unshift({t:at,txt:`${h(by)} despachó <b>${id}</b> a ${suc} · ${codes.length} paquetes`});return id}
 
 function openPin(title,users,onOk){S.modal={title,users,user:users[0],pin:'',onOk};renderModal()}
 function renderModal(){const m=S.modal;const el=document.getElementById('modal');if(!m){el.innerHTML='';return}
- el.innerHTML=`<div class="overlay" data-act="pinCancelBg"><div class="modal" role="dialog" aria-modal="true" aria-label="${h(m.title)}"><h2>${h(m.title)}</h2><div class="field"><label>¿Quién es?</label><div class="users">${m.users.map(u=>`<button data-act="pinUser" data-v="${h(u)}" aria-pressed="${m.user===u}">${h(u)}</button>`).join('')}</div></div>
+ el.innerHTML=`<div class="overlay" data-act="pinCancelBg"><div class="modal" role="dialog" aria-modal="true" aria-label="${h(m.title)}"><h2>${h(m.title)}</h2>${m.users.length>1?`<div class="field"><label>¿Quién es?</label><div class="users">${m.users.map(u=>`<button data-act="pinUser" data-v="${h(u)}" aria-pressed="${m.user===u}">${h(u)}</button>`).join('')}</div></div>`:`<p class="muted" style="margin:0">Firma: <b style="color:var(--ink)">${h(m.user)}</b></p>`}
  <div class="field"><label style="text-align:center">PIN de 4 dígitos (prototipo: cualquiera)</label><div class="dots">${[0,1,2,3].map(i=>`<i class="${i<m.pin.length?'on':''}"></i>`).join('')}</div></div>
- <div class="pad">${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-act="pin" data-v="${d}">${d}</button>`).join('')}<button data-act="pinCancel" style="font-size:15px">Cancelar</button><button data-act="pin" data-v="0">0</button><button data-act="pinDel" style="font-size:15px">Borrar</button></div></div></div>`}
+ <div class="pad">${[1,2,3,4,5,6,7,8,9].map(d=>`<button data-act="pin" data-v="${d}">${d}</button>`).join('')}<button data-act="pinCancel" style="font-size:14px">Cancelar</button><button data-act="pin" data-v="0">0</button><button data-act="pinDel" style="font-size:14px">Borrar</button></div></div></div>`}
+const me=()=>[S.user.name];
 
 /* ---------- render ---------- */
 function render(){
- document.getElementById('app').innerHTML=`<header class="top"><div class="top-in"><span class="brand"><img src="https://grtomatoes.com/assets/img/logo/logo-verde.png" alt="Green &amp; Red Tomatoes" onerror="this.outerHTML='<span class=wordmark>Green &amp; Red Tomatoes</span>'"><span class="sep"></span><span class="app">Operación</span></span><span class="proto">Prototipo</span>
- <div class="seg" role="group" aria-label="Vista"><button data-act="mode" data-v="office" aria-pressed="${S.mode==='office'}">Oficina central</button><button data-act="mode" data-v="tablet" aria-pressed="${S.mode==='tablet'}">Tablet de sucursal</button></div></div></header>
- ${S.mode==='office'?office():tablet()}`;
+ let who='';
+ if(S.mode==='office')who=`<div class="me"><span><b>${h(S.user.name)}</b><br><span class="muted small">${h(S.user.perfil)}</span></span><button class="btn" data-act="logout">Cambiar usuario</button></div>`;
+ if(S.mode==='tablet')who=`<div class="me"><span><b>Tablet ${S.suc}</b><br><span class="muted small">Sucursal</span></span><button class="btn" data-act="logout">Salir</button></div>`;
+ document.getElementById('app').innerHTML=`<header class="top"><div class="top-in"><span class="brand">${LOGO}<span class="sep"></span><span class="app">Operación</span></span><span class="proto">Prototipo</span>${who}</div></header>
+ ${S.mode==='login'?vLogin():S.mode==='office'?office():tablet()}`;
  if(window.JsBarcode)document.querySelectorAll('svg[data-code]').forEach(s=>{try{JsBarcode(s,s.dataset.code,{format:'CODE128',displayValue:false,margin:0,height:60,width:2,background:'#ffffff',lineColor:'#111111'})}catch(e){}});
  renderModal();
 }
@@ -478,41 +632,61 @@ document.addEventListener('click',ev=>{
  const b=ev.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,v=b.dataset.v;
  if(a==='pinCancelBg'&&ev.target!==b)return;
  switch(a){
- case 'mode':S.mode=v;break;
- case 'view':S.view=v;break;
- case 'inc':case 'dec':{const k=b.dataset.key;let x=+(getKey(k)||0)+(a==='inc'?1:-1);if(x<0)x=0;setKey(k,String(x));const inp=b.parentNode.querySelector('input');inp.value=x;after(k);return}
+ /* entrada */
+ case 'lwho':S.login.who=v;S.login.pin='';break;
+ case 'lsuc':S.login.suc=v;break;
+ case 'lgoSuc':S.suc=S.login.suc;S.mode='tablet';S.tview='home';S.scan=null;S.cd=null;S.login={who:null,suc:S.suc,pin:''};window.scrollTo(0,0);break;
+ case 'lpin':S.login.pin+=v;if(S.login.pin.length>=4){const t=TEAM.find(x=>x.id===S.login.who);S.user=t;S.mode='office';S.view=t.role==='duena'?'resumen':t.focus;S.login={who:null,suc:S.login.suc,pin:''};S.visit=null;S.planEdit=null;window.scrollTo(0,0);toast(`Hola, ${h(t.name)}`)}break;
+ case 'lpinDel':S.login.pin=S.login.pin.slice(0,-1);break;
+ case 'logout':S.mode='login';S.user=null;S.modal=null;break;
+ /* oficina */
+ case 'view':S.view=v;window.scrollTo(0,0);break;
+ case 'inc':case 'dec':{const k=b.dataset.key;let x=+(getKey(k)||0)+(a==='inc'?1:-1);if(x<0)x=0;setKey(k,String(x));b.parentNode.querySelector('input').value=x;after(k);return}
  case 'ingcat':S.ing.cat=v;break;
- case 'closeIng':openPin('Cerrar ingreso de '+S.ing.prov,CENTRAL_USERS,user=>{let units=0,prods=0;for(const pid in S.ing.qty){const q=+S.ing.qty[pid]||0;if(q){S.stock[pid]+=q;units+=q;prods++}}
-   const at=nowT();S.ingresos.unshift({fecha:'13 nov '+at,prov:S.ing.prov,prods,units,by:user.split(' · ')[0]});S.log.unshift({t:at,txt:`${h(user.split(' · ')[0])} cerró ingreso de <b>${h(S.ing.prov)}</b> · ${prods} productos, ${units} u`});S.ing.qty={};toast(`Ingreso cerrado por ${h(user.split(' · ')[0])}. Bodega actualizada.`)});return;
- case 'genPk':{const need=S.pk.n*S.pk.per;S.stock[S.pk.pid]-=need;S.lastBatch=makePkgs(S.pk.pid,+S.pk.n,'bodega');S.log.unshift({t:nowT(),txt:`Se armaron ${S.pk.n} paquetes de <b>${h(P[S.pk.pid].name)}</b>`});toast(`${S.pk.n} etiquetas listas para imprimir`);break}
+ case 'closeIng':openPin('Cerrar ingreso de '+S.ing.prov,me(),user=>{let units=0,prods=0;for(const pid in S.ing.qty){const q=+S.ing.qty[pid]||0;if(q){S.stock[pid]+=q;units+=q;prods++}}
+   const at=nowT();S.ingresos.unshift({fecha:'13 nov '+at,prov:S.ing.prov,prods,units,by:user});S.log.unshift({t:at,txt:`${h(user)} cerró ingreso de <b>${h(S.ing.prov)}</b> · ${prods} productos, ${units} u`});S.ing.qty={};toast(`Ingreso cerrado por ${h(user)}. Bodega actualizada.`)});return;
+ case 'genPk':{const need=S.pk.n*S.pk.per;S.stock[S.pk.pid]-=need;S.lastBatch=makePkgs(S.pk.pid,+S.pk.n,'bodega');S.log.unshift({t:nowT(),txt:`${h(S.user.name)} armó ${S.pk.n} paquetes de <b>${h(P[S.pk.pid].name)}</b>`});toast(`${S.pk.n} etiquetas listas para imprimir`);break}
  case 'envsuc':S.env.suc=v;break;
  case 'envAdd':{const pk=S.packages.find(x=>x.status==='bodega'&&x.pid===v&&!S.env.codes.includes(x.code));if(pk)S.env.codes.push(pk.code);break}
- case 'envDel':{const i=S.env.codes.map(c=>S.packages.find(x=>x.code===c).pid).lastIndexOf(v);if(i>=0)S.env.codes.splice(i,1);break}
- case 'envScan':{const c=(S.env.scan||'').trim().toUpperCase();const pk=S.packages.find(x=>x.code===c);S.env.scan='';
+ case 'envDel':{const i=S.env.codes.map(c=>pkg(c).pid).lastIndexOf(v);if(i>=0)S.env.codes.splice(i,1);break}
+ case 'envScan':{const c=(S.env.scan||'').trim().toUpperCase();const pk=pkg(c);S.env.scan='';
    if(!pk)toast('Ese código no existe.');else if(pk.status!=='bodega')toast('Ese paquete ya salió en otro envío.');else if(S.env.codes.includes(c))toast('Ese paquete ya está en este envío.');else S.env.codes.push(c);break}
- case 'despachar':openPin('Despachar a '+S.env.suc,CENTRAL_USERS,user=>{const id='ENV-'+String(++envSeq).padStart(4,'0');const at=nowT();S.env.codes.forEach(c=>{const pk=S.packages.find(x=>x.code===c);pk.status='en_camino';pk.envio=id;pk.suc=S.env.suc});
-   S.envios.unshift({id,suc:S.env.suc,fecha:'13 nov '+at,codes:[...S.env.codes],status:'en_camino',by:user});S.log.unshift({t:at,txt:`${h(user.split(' · ')[0])} despachó <b>${id}</b> a ${S.env.suc} · ${S.env.codes.length} paquetes`});toast(`${id} en camino a ${S.env.suc}. Ya aparece en su tablet.`);S.env.codes=[]});return;
+ case 'despachar':openPin('Despachar envío extra a '+S.env.suc,me(),user=>{const id=dispatch(S.env.suc,S.env.codes,user);toast(`${id} en camino a ${S.env.suc}. Ya aparece en su tablet.`);S.env.codes=[]});return;
+ case 'dDesp':openPin('Despachar a '+v,me(),user=>{const {picked}=pickFor(v);const id=dispatch(v,picked,user);S.todayEnv[v]=id;toast(`${id} salió de bodega hacia ${v}`)});return;
+ case 'dEntr':openPin('Entregado en sucursal',me(),user=>{const e=S.envios.find(x=>x.id===v);e.status='entregado';e.dejo={by:user,at:nowT()};S.log.unshift({t:e.dejo.at,txt:`${h(user)} entregó <b>${e.id}</b> en ${e.suc} · falta que la sucursal escanee`});toast(`Entrega registrada. ${e.suc} debe escanear los paquetes.`)});return;
+ case 'pday':{const d=S.plan[b.dataset.s].days;const i=+v;const k=d.indexOf(i);k>=0?d.splice(k,1):d.push(i);d.sort();break}
+ case 'planEdit':S.planEdit=v;break;
+ case 'planDone':{const it=S.plan[S.planEdit].items;for(const k in it)if(!(+it[k]>0))delete it[k];S.planEdit=null;toast('Pedido base guardado');break}
  case 'wsuc':S.wsuc=v;break;
- case 'tsuc':S.suc=v;S.tview='home';S.scan=null;S.cd=null;break;
+ /* supervisión */
+ case 'vStart':{const pool=PRODUCTS.filter(p=>p.cost!=null);const pick=[];while(pick.length<3){const p=pool[ri(0,pool.length-1)].id;if(!pick.includes(p))pick.push(p)}
+   S.visit={suc:v,res:{},notes:{},conteo:pick,counts:{},sistema:Object.fromEntries(pick.map(p=>[p,ri(4,18)]))};break}
+ case 'vCancel':S.visit=null;break;
+ case 'ck':S.visit.res[b.dataset.i]=v;break;
+ case 'vFinish':openPin('Terminar visita a '+S.visit.suc,me(),user=>{const V=S.visit;const at=nowT();
+   const rec={suc:V.suc,ago:0,fecha:'Vie 13 nov',at,by:user,results:S.checklist.map((item,i)=>({item,ok:V.res[i]==='ok',note:V.notes[i]||''})),conteo:V.conteo.map(pid=>({pid,sistema:V.sistema[pid],contado:+V.counts[pid]||0}))};
+   S.visits.push(rec);S.visit=null;const ok=visitOk(rec);S.log.unshift({t:at,txt:`${h(user)} visitó ${rec.suc} · ${ok} de ${rec.results.length} bien`,bad:ok<rec.results.length});toast(`Visita a ${rec.suc} guardada: ${ok} de ${rec.results.length} bien`)});return;
+ case 'ckDel':S.checklist.splice(+v,1);break;
+ case 'ckAdd':if((S.newItem||'').trim()){S.checklist.push(S.newItem.trim());S.newItem=''}break;
+ /* tablet */
  case 'tview':S.tview=v;if(v==='cierre'&&!S.cd)S.cd={vend:{},quedan:{},cinta:'',cat:'beb'};break;
  case 'net':S.online=!S.online;S.branch[S.suc].online=S.online;if(S.online){const n=S.queue.length;S.queue.forEach(q=>(q.type==='rec'?applyRec:applyCd)(q.payload));S.queue=[];S.branch[S.suc].sync=0;if(n)toast(`Volvió el internet: ${n} registro(s) enviados a oficina central`)}else{S.branch[S.suc].sync=1;toast('Sin internet. La tablet sigue funcionando y guarda todo.')}break;
  case 'startScan':S.scan={envio:v,scanned:[],damaged:[],msg:null};S.tview='scan';break;
- case 'simScan':{const e=S.envios.find(x=>x.id===S.scan.envio);const next=e.codes.slice(0,-1).find(c=>!S.scan.scanned.includes(c))||e.codes.find(c=>!S.scan.scanned.includes(c));
-   // deja el último paquete sin escanear hasta que se toque de nuevo, para poder probar el faltante
-   if(!next){S.scan.msg={k:'warn',t:'Ya escaneó todo lo que trae este envío.'}}else{doScan(next)}break}
+ case 'simScan':{const e=S.envios.find(x=>x.id===S.scan.envio);const next=e.codes.find(c=>!S.scan.scanned.includes(c));if(!next)S.scan.msg={k:'warn',t:'Ya escaneó todo lo que trae este envío.'};else doScan(next);break}
  case 'simWrong':{const other=S.packages.find(x=>x.status!=='bodega'&&x.suc&&x.suc!==S.suc)||S.packages.find(x=>x.status==='bodega');doScan(other.code);break}
  case 'manScan':doScan((document.getElementById('mancode').value||'').trim().toUpperCase());break;
  case 'dmg':{const i=S.scan.damaged.indexOf(v);i>=0?S.scan.damaged.splice(i,1):S.scan.damaged.push(v);break}
  case 'finishScan':S.scan.confirm=true;break;
  case 'scanBack':S.scan.confirm=false;break;
- case 'approveRec':openPin('Aprobar recepción',SUC_USERS[S.suc],user=>{const sent=commit('rec',{envio:S.scan.envio,scanned:[...S.scan.scanned],damaged:[...S.scan.damaged],user,at:nowT()});if(!sent){const e=S.envios.find(x=>x.id===S.scan.envio);e.localDone=true}
+ case 'approveRec':openPin('Aprobar recepción',SUC_USERS[S.suc],user=>{const sent=commit('rec',{envio:S.scan.envio,scanned:[...S.scan.scanned],damaged:[...S.scan.damaged],user,at:nowT()});if(!sent)S.envios.find(x=>x.id===S.scan.envio).localDone=true;
    toast(sent?'Recepción aprobada. Oficina central ya la ve.':'Guardado en la tablet. Se enviará cuando vuelva el internet.');S.scan=null;S.tview='home'});return;
  case 'cdcat':S.cd.cat=v;break;
  case 'cdFill':PRODUCTS.forEach(p=>{if(S.cd.vend[p.id]===undefined||S.cd.vend[p.id]==='')S.cd.vend[p.id]=String(ri(0,6));if(S.cd.quedan[p.id]===undefined||S.cd.quedan[p.id]==='')S.cd.quedan[p.id]=String(ri(0,15))});if(!S.cd.cinta)S.cd.cinta='184.35';break;
  case 'cdConfirm':S.cd.confirm=true;break;
  case 'cdBack':S.cd.confirm=false;break;
- case 'approveCd':openPin('Cerrar el día en '+S.suc,SUC_USERS[S.suc],user=>{const sent=commit('cd',{suc:S.suc,user,at:nowT(),cinta:S.cd.cinta});if(!sent)S.branch[S.suc].cierreLocal=true;
-   if(sent)null;else S.branch[S.suc].cierre=null;toast(sent?'Día cerrado. Oficina central ya lo ve.':'Cierre guardado en la tablet. Se enviará cuando vuelva el internet.');S.cd=null;S.tview='home'});return;
+ case 'approveCd':openPin('Cerrar el día en '+S.suc,SUC_USERS[S.suc],user=>{const sent=commit('cd',{suc:S.suc,user,at:nowT(),cinta:S.cd.cinta});
+   toast(sent?'Día cerrado. Oficina central ya lo ve.':'Cierre guardado en la tablet. Se enviará cuando vuelva el internet.');S.cd=null;S.tview='home'});return;
+ /* PIN */
  case 'pin':S.modal.pin+=v;if(S.modal.pin.length>=4){const m=S.modal;S.modal=null;m.onOk(m.user);render();return}renderModal();return;
  case 'pinDel':S.modal.pin=S.modal.pin.slice(0,-1);renderModal();return;
  case 'pinUser':S.modal.user=v;renderModal();return;
@@ -520,7 +694,7 @@ document.addEventListener('click',ev=>{
  }
  render();
 });
-function doScan(code){const sc=S.scan;const e=S.envios.find(x=>x.id===sc.envio);const pk=S.packages.find(x=>x.code===code);
+function doScan(code){const sc=S.scan;const e=S.envios.find(x=>x.id===sc.envio);const pk=pkg(code);
  if(!pk)sc.msg={k:'bad',t:`El código ${h(code||'(vacío)')} no existe. Revise la etiqueta.`};
  else if(sc.scanned.includes(code))sc.msg={k:'warn',t:'Este paquete ya fue escaneado.'};
  else if(!e.codes.includes(code))sc.msg={k:'bad',t:`Este paquete no es de este envío${pk.suc&&pk.suc!==S.suc?` (va para <b>${pk.suc}</b>)`:''}. No lo reciba y avise a oficina central.`};
@@ -531,10 +705,14 @@ function after(k){
   const row=document.querySelector(`[data-row="${k.split('.')[2]}"]`);if(row)row.classList.toggle('done',getKey(k)!=='');const go=document.getElementById('cdgo');if(go){go.disabled=done<PRODUCTS.length;go.textContent=done<PRODUCTS.length?`Faltan ${PRODUCTS.length-done} por contar`:'Revisar y cerrar'}
   document.querySelectorAll('[data-act="cdcat"]').forEach(c=>{const ps=PRODUCTS.filter(p=>p.cat===c.dataset.v);c.textContent=`${CATS[c.dataset.v][0]} · ${ps.filter(p=>S.cd.quedan[p.id]!==undefined&&S.cd.quedan[p.id]!=='').length}/${ps.length}`})}
  if(k.startsWith('ing.qty')){const tot=Object.values(S.ing.qty).reduce((a,b)=>a+(+b||0),0);const cnt=Object.values(S.ing.qty).filter(v=>+v>0).length;document.getElementById('ingtot').textContent=`${cnt} productos · ${tot} unidades`;document.getElementById('ingbtn').disabled=!tot}
- if(k==='pk.n')render();
+ if(k==='pk.n'||k.startsWith('visit.counts')||k.startsWith('plan.'))render();
 }
-document.addEventListener('input',ev=>{const k=ev.target.dataset.key;if(!k)return;let v=ev.target.value;if(ev.target.inputMode==='numeric'){v=v.replace(/\D/g,'');ev.target.value=v}setKey(k,v);if(k!=='pk.n')after(k)});
-document.addEventListener('change',ev=>{const k=ev.target.dataset.key;if(!k)return;if(k==='pk.pid'){S.pk.per=P[S.pk.pid].pack;S.lastBatch=[];render()}if(k==='pk.n'){if(!(+S.pk.n>0))S.pk.n='1';render()}});
-document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.id==='envscan'){ev.preventDefault();document.querySelector('[data-act="envScan"]').click()}if(ev.key==='Enter'&&ev.target.id==='mancode'){document.querySelector('[data-act="manScan"]').click()}});
+document.addEventListener('input',ev=>{const k=ev.target.dataset.key;if(!k||k==='planAdd')return;let v=ev.target.value;if(ev.target.inputMode==='numeric'){v=v.replace(/\D/g,'');ev.target.value=v}setKey(k,v);if(k!=='pk.n'&&!k.startsWith('visit.counts')&&!k.startsWith('plan.'))after(k)});
+document.addEventListener('change',ev=>{const k=ev.target.dataset.key;if(!k)return;
+ if(k==='pk.pid'){S.pk.per=P[S.pk.pid].pack;S.lastBatch=[];render()}
+ if(k==='pk.n'){if(!(+S.pk.n>0))S.pk.n='1';render()}
+ if(k==='planAdd'&&ev.target.value){S.plan[S.planEdit].items[ev.target.value]='1';render()}
+ if(k.startsWith('visit.counts')||k.startsWith('plan.'))render()});
+document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target.id==='envscan'){ev.preventDefault();document.querySelector('[data-act="envScan"]').click()}if(ev.key==='Enter'&&ev.target.id==='mancode'){document.querySelector('[data-act="manScan"]').click()}if(ev.key==='Enter'&&ev.target.id==='newitem'){document.querySelector('[data-act="ckAdd"]').click()}});
 render();
 </script>
