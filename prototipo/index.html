@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Green &amp; Red Operación</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -220,6 +221,75 @@ th.today{color:var(--terra)}
 .edit-box{background:var(--surface);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:10px}
 .x{border:0;background:transparent;color:var(--muted);font-size:18px;padding:2px 8px}
 .pos{color:var(--olive);font-weight:600}
+
+/* ===== Dashboard: fondo blanco siempre, menú lateral, tarjetas ===== */
+:root{--bg:#FFFFFF;--surface:#FFFFFF;--sunk:#F3F5F1;--line:rgba(29,58,39,.11);--line-strong:rgba(29,58,39,.22);--r:12px}
+body{background:#FFFFFF}
+h1{font-size:28px}
+h2,h3{font-family:var(--f-sans);font-weight:600;letter-spacing:0}
+h2{font-size:16px} h3{font-size:14.5px}
+.shell{display:grid;grid-template-columns:252px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:14px;background:#FFFFFF;padding:calc(22px + env(safe-area-inset-top,0px)) 14px 18px max(14px,env(safe-area-inset-left,0px))}
+.side .brand{padding:0 8px 6px}
+.side .brand img{height:42px}
+.side nav{display:flex;flex-direction:column;gap:2px}
+.side .grp{font-family:var(--f-cond);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--muted);padding:16px 10px 6px}
+.side nav button{display:flex;align-items:center;gap:11px;border:0;background:transparent;border-radius:8px;padding:9px 10px;font-weight:500;font-size:14px;color:#3B4137;text-align:left;width:100%}
+.side nav button svg{width:18px;height:18px;flex:none;color:var(--muted)}
+.side nav button:hover{background:var(--sunk)}
+.side nav button[aria-current="true"]{background:var(--ink);color:#FFFFFF}
+.side nav button[aria-current="true"] svg{color:#FFFFFF}
+.side nav .count{margin-left:auto;font-family:var(--f-cond);font-size:12px;background:var(--terra-soft);color:var(--terra);border-radius:99px;padding:0 8px;line-height:20px}
+.side nav button[aria-current="true"] .count{background:rgba(255,255,255,.2);color:#FFFFFF}
+.me-box{margin-top:auto;border-top:1px solid var(--line);padding:14px 6px 0;display:flex;align-items:center;gap:10px}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--ink);color:#FFFFFF;display:grid;place-items:center;font-weight:600;font-size:13px;flex:none}
+.who2{min-width:0;flex:1;line-height:1.3}
+.who2 b{display:block;color:var(--ink);font-size:13.5px}
+.who2 span{font-size:11.5px;color:var(--muted)}
+.icon-btn{border:1px solid var(--line-strong);background:#FFFFFF;border-radius:8px;width:34px;height:34px;display:grid;place-items:center;color:var(--muted);padding:0;flex:none}
+.icon-btn svg{width:17px;height:17px}
+.icon-btn:hover{color:var(--ink);border-color:var(--ink)}
+.content{min-width:0;display:flex;flex-direction:column;background:#FFFFFF}
+.bar{position:sticky;top:0;z-index:15;background:#FFFFFF;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:calc(14px + env(safe-area-inset-top,0px)) max(32px,env(safe-area-inset-right,0px)) 14px 32px}
+.crumb{font-size:13px;color:var(--muted)}
+.crumb b{color:var(--ink);font-weight:600}
+.bar .right{margin-left:auto;display:flex;gap:16px;align-items:center;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.content .main{max-width:1320px;margin:0;padding:28px 32px 64px;gap:24px}
+.panel{background:#FFFFFF;border:1px solid var(--line);border-radius:var(--r);padding:20px 22px}
+.panel-h{margin-bottom:14px}
+.kpis{gap:16px;border:0}
+.kpis .kpi{border:1px solid var(--line)!important;border-radius:var(--r);padding:16px 20px!important;background:#FFFFFF}
+.kpi b{font-size:34px}
+.week-strip{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.wk:first-child{padding-left:14px}
+.wk{padding:12px 14px}
+.wk.today{background:var(--sunk)}
+th{background:var(--sunk);border-bottom:0}
+th:first-child{border-radius:8px 0 0 8px;padding-left:12px}
+th:last-child{border-radius:0 8px 8px 0}
+td:first-child{padding-left:12px}
+.cat-row td{padding-top:18px}
+.chip{background:#FFFFFF}
+.head h1{font-size:28px}
+.edit-box{background:var(--sunk)}
+.grid-res{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
+@media (min-width:1600px){.grid-res{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}}
+.grid-res .feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));column-gap:28px}
+@media (min-width:1600px){.grid-res .feed{display:flex}}
+@media (max-width:900px){
+ .shell{grid-template-columns:1fr}
+ .side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:0;border-bottom:1px solid var(--line);padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+ .side .brand{padding:0}
+ .side .brand img{height:34px}
+ .side nav{flex-direction:row;overflow-x:auto;width:100%;order:3;gap:4px}
+ .side .grp{display:none}
+ .side nav button{white-space:nowrap;width:auto}
+ .me-box{margin:0 0 0 auto;border:0;padding:0}
+ .who2{display:none}
+ .bar{position:static;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px))}
+ .content .main{padding:20px max(16px,env(safe-area-inset-right,0px)) 48px max(16px,env(safe-area-inset-left,0px))}
+ .panel{padding:16px}
+}
 </style>
 
 <div id="app"></div>
@@ -254,9 +324,21 @@ const TEAM=[
 ];
 const SUC_USERS={Merliot:['Gabriela H.','Óscar P.'],TOG:['María L.','Kevin R.'],Soho:['Daniela C.','Luis F.'],Cascadas:['Andrea M.','Carlos V.'],Tigo:['Sofía G.','Mario A.'],Emblema:['Paola R.','Jorge E.'],Kinetika:['Valeria S.','Diego N.']};
 const NAV={
- duena:[['resumen','Resumen'],['distribucion','Distribución'],['supervision','Supervisión'],['semana','Cierre semanal'],['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes'],['envios','Envíos'],['equipo','Equipo']],
- ops:[['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes'],['distribucion','Distribución'],['envios','Envíos'],['supervision','Supervisión']]
+ duena:[['General',[['resumen','Resumen']]],['Operación',[['distribucion','Distribución'],['envios','Envíos'],['supervision','Supervisión']]],['Bodega',[['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes']]],['Administración',[['semana','Cierre semanal'],['equipo','Equipo']]]],
+ ops:[['Bodega',[['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes']]],['Operación',[['distribucion','Distribución'],['envios','Envíos'],['supervision','Supervisión']]]]
 };
+const NI=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const NAV_ICON={
+ resumen:NI('<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>'),
+ distribucion:NI('<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/>'),
+ envios:NI('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>'),
+ supervision:NI('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="m9 13 2 2 4-4"/>'),
+ ingreso:NI('<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>'),
+ paquetes:NI('<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>'),
+ semana:NI('<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M9 4v17M16 2v4M8 2v4"/>'),
+ equipo:NI('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5.5 5"/>')
+};
+const LOGOUT_ICON=NI('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/>');
 const LOGO=`<img src="https://grtomatoes.com/assets/img/logo/logo-verde.png" alt="Green &amp; Red Tomatoes" onerror="this.outerHTML='<span class=wordmark>Green &amp; Red Tomatoes</span>'">`;
 
 /* ---------- datos de ejemplo (sembrados) ---------- */
@@ -382,7 +464,7 @@ function vResumen(){
   <div class="kpi"><span class="muted">Cierres de hoy</span><b class="num">${cierresN} / 7</b><span class="muted">${SUC.filter(s=>!S.branch[s].cierre).join(', ')||'Todas cerraron'}</span></div>
   <div class="kpi ${tot.f+tot.s<0?'bad':''}"><span class="muted">Neto semana pasada</span><b class="num">${moneyS(tot.f+tot.s)}</b><span class="muted">faltante ${money(tot.f)} · sobrante ${moneyS(tot.s)}</span></div>
  </div>
- <div class="grid2">
+ <div class="grid-res">
   <section class="panel"><div class="panel-h"><h2>Sucursales</h2></div><div class="tbl-wrap"><table><thead><tr><th>Sucursal</th><th>Tablet</th><th>Cierre de hoy</th><th>Envío de hoy</th><th>Última visita</th><th class="r">Neto semana</th></tr></thead><tbody>${rows}</tbody></table></div></section>
   <section class="panel"><div class="panel-h"><h2>Actividad reciente</h2></div><div class="feed">${S.log.slice(0,10).map(l=>`<div><time>${l.t}</time><span${l.bad?' style="color:var(--terra)"':''}>${l.txt}</span></div>`).join('')}</div></section>
  </div>`;
@@ -518,7 +600,7 @@ function vSemana(){
   <div class="kpi"><span class="muted">Sobrante</span><b class="num" style="color:var(--olive)">${moneyS(tot.sv)}</b><span class="muted">+${tot.su} unidades</span></div>
   <div class="kpi ${tot.fv+tot.sv<0?'bad':''}"><span class="muted">Neto</span><b class="num">${moneyS(tot.fv+tot.sv)}</b><span class="muted">faltante menos sobrante</span></div>
  </div>
- <section class="panel" style="border-top:0;padding-top:0"><div class="tbl-wrap"><table style="font-size:14px"><thead><tr><th>Producto</th><th class="r">Inicial</th><th class="r">Entró</th>${DAYS.map(d=>`<th class="r">${d}</th>`).join('')}<th class="r">Vendido</th><th class="r">Debía quedar</th><th class="r">Contaron</th><th class="r">Dif.</th><th class="r">Dif. $</th></tr></thead><tbody>${body}</tbody></table></div></section>
+ <section class="panel"><div class="tbl-wrap"><table style="font-size:14px"><thead><tr><th>Producto</th><th class="r">Inicial</th><th class="r">Entró</th>${DAYS.map(d=>`<th class="r">${d}</th>`).join('')}<th class="r">Vendido</th><th class="r">Debía quedar</th><th class="r">Contaron</th><th class="r">Dif.</th><th class="r">Dif. $</th></tr></thead><tbody>${body}</tbody></table></div></section>
  <p class="hint" style="text-align:left">Ventas por día según la cinta que ingresa la sucursal. "Debía quedar" = inicial + entró − vendido; solo la dueña ve esta pantalla. Los costos de este prototipo son de ejemplo.</p>`;
 }
 
@@ -531,9 +613,17 @@ function vEquipo(){
 
 function office(){
  const views={resumen:vResumen,ingreso:vIngreso,paquetes:vPaquetes,distribucion:vDistrib,envios:vEnvios,supervision:vSuper,semana:vSemana,equipo:vEquipo};
- const nav=NAV[S.user.role];
- const counts={paquetes:S.packages.filter(p=>p.status==='bodega').length,distribucion:SUC.filter(s=>S.plan[s].days.includes(TODAY)&&!S.todayEnv[s]).length,supervision:S.visits.some(v=>v.ago===0)?0:1};
- return `<div class="office"><nav class="nav" aria-label="Secciones">${nav.map(([k,l])=>`<button data-act="view" data-v="${k}" aria-current="${S.view===k}">${l}${counts[k]?`<span class="count">${counts[k]}</span>`:''}</button>`).join('')}</nav><main class="main">${views[S.view]()}</main></div>`;
+ const groups=NAV[S.user.role];
+ const counts={distribucion:SUC.filter(s=>S.plan[s].days.includes(TODAY)&&!S.todayEnv[s]).length,supervision:S.visits.some(v=>v.ago===0)?0:1};
+ const label=groups.flatMap(g=>g[1]).find(x=>x[0]===S.view)[1];const grp=groups.find(g=>g[1].some(x=>x[0]===S.view))[0];
+ const online=SUC.filter(s=>S.branch[s].online).length;
+ return `<div class="shell">
+ <aside class="side"><span class="brand">${LOGO}</span>
+  <nav aria-label="Secciones">${groups.map(([g,items])=>`<span class="grp">${g}</span>${items.map(([k,l])=>`<button data-act="view" data-v="${k}" aria-current="${S.view===k}">${NAV_ICON[k]}<span>${l}</span>${counts[k]?`<span class="count">${counts[k]}</span>`:''}</button>`).join('')}`).join('')}</nav>
+  <div class="me-box"><span class="avatar">${h(initials(S.user.name)||S.user.name[0])}</span><span class="who2"><b>${h(S.user.name)}</b><span>${h(S.user.perfil)}</span></span><button class="icon-btn" data-act="logout" title="Cambiar usuario" aria-label="Cambiar usuario">${LOGOUT_ICON}</button></div>
+ </aside>
+ <div class="content"><header class="bar"><span class="crumb">${grp} / <b>${label}</b></span><span class="right"><span>Viernes 13 nov 2026</span><span class="pill ${online===7?'ok':'warn'}">${online} de 7 tablets en línea</span><span class="proto">Prototipo</span></span></header>
+ <main class="main">${views[S.view]()}</main></div></div>`;
 }
 
 /* ---------- TABLET ---------- */
@@ -620,13 +710,13 @@ const me=()=>[S.user.name];
 /* ---------- render ---------- */
 function render(){
  let who='';
- if(S.mode==='office')who=`<div class="me"><span><b>${h(S.user.name)}</b><br><span class="muted small">${h(S.user.perfil)}</span></span><button class="btn" data-act="logout">Cambiar usuario</button></div>`;
+ if(S.mode==='office'){document.getElementById('app').innerHTML=office();drawCodes();renderModal();return}
  if(S.mode==='tablet')who=`<div class="me"><span><b>Tablet ${S.suc}</b><br><span class="muted small">Sucursal</span></span><button class="btn" data-act="logout">Salir</button></div>`;
  document.getElementById('app').innerHTML=`<header class="top"><div class="top-in"><span class="brand">${LOGO}<span class="sep"></span><span class="app">Operación</span></span><span class="proto">Prototipo</span>${who}</div></header>
  ${S.mode==='login'?vLogin():S.mode==='office'?office():tablet()}`;
- if(window.JsBarcode)document.querySelectorAll('svg[data-code]').forEach(s=>{try{JsBarcode(s,s.dataset.code,{format:'CODE128',displayValue:false,margin:0,height:60,width:2,background:'#ffffff',lineColor:'#111111'})}catch(e){}});
- renderModal();
+ drawCodes();renderModal();
 }
+function drawCodes(){if(window.JsBarcode)document.querySelectorAll('svg[data-code]').forEach(s=>{try{JsBarcode(s,s.dataset.code,{format:'CODE128',displayValue:false,margin:0,height:60,width:2,background:'#ffffff',lineColor:'#111111'})}catch(e){}})}
 
 document.addEventListener('click',ev=>{
  const b=ev.target.closest('[data-act]');if(!b)return;const a=b.dataset.act,v=b.dataset.v;
