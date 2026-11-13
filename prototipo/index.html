@@ -272,6 +272,33 @@ td:first-child{padding-left:12px}
 .chip{background:#FFFFFF}
 .head h1{font-size:28px}
 .edit-box{background:var(--sunk)}
+.seg2{display:inline-flex;background:var(--sunk);border-radius:9px;padding:3px}
+.seg2 button{border:0;background:transparent;border-radius:7px;padding:7px 14px;font-weight:600;font-size:13px;color:var(--muted)}
+.seg2 button[aria-pressed="true"]{background:#FFFFFF;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.xl table{font-size:12.5px;border-collapse:separate;border-spacing:0}
+.xl th,.xl td{padding:6px 8px;white-space:nowrap;text-align:right;border-bottom:1px solid var(--line)}
+.xl th{background:var(--sunk);border-radius:0!important;font-size:10.5px;line-height:1.25;white-space:normal;min-width:52px;vertical-align:bottom}
+.xl .stick{position:sticky;left:0;z-index:1;background:#FFFFFF;text-align:left;min-width:170px;box-shadow:1px 0 0 var(--line)}
+.xl th.stick{background:var(--sunk);z-index:2}
+.xl .d0{border-left:1px solid var(--line-strong)}
+.xl .dayh{text-align:center}
+.xl .cat-row td{padding-top:14px;background:#FFFFFF}
+.xl .sub td{font-weight:600;background:#FAFBF9;border-bottom:1px solid var(--line-strong)}
+.xl .sub .stick{background:#FAFBF9}
+.xl .grand td{background:var(--sunk);font-size:13px}
+.xl .grand .stick{background:var(--sunk)}
+.banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;border:1px solid var(--mustard-soft);background:#FFFBF0;border-radius:var(--r);padding:12px 16px;color:var(--mustard)}
+.money-in{display:inline-flex;align-items:center;gap:4px;color:var(--muted)}
+.money-in input,.pack-in{width:84px;text-align:right;padding:6px 8px;font-variant-numeric:tabular-nums}
+.pack-in{width:60px}
+.money-in input:placeholder-shown{border-color:var(--mustard)}
+.toggle{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;font-size:13px;font-weight:600;color:var(--muted)}
+.toggle i{width:34px;height:20px;border-radius:99px;background:var(--line-strong);position:relative;transition:background .15s}
+.toggle i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#FFFFFF;transition:left .15s}
+.toggle[aria-pressed="true"]{color:var(--olive)}
+.toggle[aria-pressed="true"] i{background:var(--olive)}
+.toggle[aria-pressed="true"] i::after{left:16px}
+tr.off td{opacity:.5}
 .grid-res{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}
 @media (min-width:1600px){.grid-res{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}}
 .grid-res .feed{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));column-gap:28px}
@@ -324,7 +351,7 @@ const TEAM=[
 ];
 const SUC_USERS={Merliot:['Gabriela H.','Óscar P.'],TOG:['María L.','Kevin R.'],Soho:['Daniela C.','Luis F.'],Cascadas:['Andrea M.','Carlos V.'],Tigo:['Sofía G.','Mario A.'],Emblema:['Paola R.','Jorge E.'],Kinetika:['Valeria S.','Diego N.']};
 const NAV={
- duena:[['General',[['resumen','Resumen']]],['Operación',[['distribucion','Distribución'],['envios','Envíos'],['supervision','Supervisión']]],['Bodega',[['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes']]],['Administración',[['semana','Cierre semanal'],['equipo','Equipo']]]],
+ duena:[['General',[['resumen','Resumen']]],['Operación',[['distribucion','Distribución'],['envios','Envíos'],['supervision','Supervisión']]],['Bodega',[['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes']]],['Administración',[['semana','Cierre semanal'],['productos','Productos'],['equipo','Equipo']]]],
  ops:[['Bodega',[['ingreso','Ingreso de proveedor'],['paquetes','Armar paquetes']]],['Operación',[['distribucion','Distribución'],['envios','Envíos'],['supervision','Supervisión']]]]
 };
 const NI=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
@@ -336,6 +363,7 @@ const NAV_ICON={
  ingreso:NI('<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/>'),
  paquetes:NI('<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>'),
  semana:NI('<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M9 4v17M16 2v4M8 2v4"/>'),
+ productos:NI('<path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>'),
  equipo:NI('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5.5 5"/>')
 };
 const LOGOUT_ICON=NI('<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/>');
@@ -356,7 +384,7 @@ const S={user:null,mode:'login',view:'',suc:'Merliot',tview:'home',online:true,q
  ing:{prov:'Distribuidora La Central',qty:{},cat:'beb'},
  pk:{pid:'p01',n:4,per:12},lastBatch:[],
  env:{suc:'Soho',codes:[],scan:''},
- wsuc:'Merliot',plan:{},planEdit:null,todayEnv:{},
+ wsuc:'Merliot',wmode:'resumen',pf:'todos',np:{name:'',cat:'beb',cost:'',pack:''},plan:{},planEdit:null,todayEnv:{},
  checklist:['Local limpio: piso, mesas y baño','Vitrina ordenada y con producto','Sin producto vencido o dañado','Refrigeradora a la temperatura correcta','Personal con uniforme y gorro','Cierre de ayer hecho en la tablet','Envíos recibidos y escaneados','Caja chica cuadrada'],
  newItem:'',visits:[],visit:null,
  login:{who:null,suc:'Merliot',pin:''},
@@ -414,6 +442,7 @@ S.log=[
 S.ingresos=[{fecha:'13 nov 6:15',prov:'Distribuidora La Central',prods:18,units:1240,by:'Ricardo'},{fecha:'12 nov 6:30',prov:'Bimbo',prods:9,units:620,by:'Ricardo'},{fecha:'11 nov 6:20',prov:'Lácteos del Valle',prods:6,units:432,by:'Ricardo'}];
 
 /* ---------- utilidades ---------- */
+const ACTIVE=()=>PRODUCTS.filter(p=>p.active!==false);
 const isOwner=()=>S.user&&S.user.role==='duena';
 function weekDiff(s){let fu=0,su=0,fv=0,sv=0;for(const pid in S.week[s]){const r=S.week[s][pid];const d=r.contado-r.esperado,c=P[pid].cost||0;if(d<0){fu+=d;fv+=d*c}else{su+=d;sv+=d*c}}return{fu,su,fv,sv,neto:fv+sv}}
 function thumb(p){return `<span class="thumb c-${p.cat}">${h(initials(p.name))}</span>`}
@@ -471,7 +500,7 @@ function vResumen(){
 }
 
 function vIngreso(){
- const list=PRODUCTS.filter(p=>p.cat===S.ing.cat);
+ const list=ACTIVE().filter(p=>p.cat===S.ing.cat);
  const tot=Object.values(S.ing.qty).reduce((a,b)=>a+(+b||0),0);
  const cnt=Object.values(S.ing.qty).filter(v=>+v>0).length;
  return `<div class="head"><div><span class="eyebrow">Bodega central · Inventario</span><h1>Ingreso de proveedor</h1><p>Cuente lo que llegó y anótelo. Al cerrar, queda registrado quién lo contó y a qué hora, y el inventario de bodega se actualiza.</p></div></div>
@@ -496,7 +525,7 @@ function vPaquetes(){
  <div class="grid2b">
   <section class="panel stack">
    <h2>Nuevo lote</h2>
-   <div class="field"><label for="pkp">Producto</label><select id="pkp" data-key="pk.pid">${Object.entries(CATS).map(([k,v])=>`<optgroup label="${v[0]}">${PRODUCTS.filter(x=>x.cat===k).map(x=>`<option value="${x.id}"${x.id===S.pk.pid?' selected':''}>${h(x.name)}</option>`).join('')}</optgroup>`).join('')}</select></div>
+   <div class="field"><label for="pkp">Producto</label><select id="pkp" data-key="pk.pid">${Object.entries(CATS).map(([k,v])=>`<optgroup label="${v[0]}">${ACTIVE().filter(x=>x.cat===k).map(x=>`<option value="${x.id}"${x.id===S.pk.pid?' selected':''}>${h(x.name)}</option>`).join('')}</optgroup>`).join('')}</select></div>
    <div class="row" style="gap:22px">
     <div class="field"><label>Unidades por paquete</label><div class="row"><b class="num" style="font-size:22px;color:var(--ink)">${S.pk.per}</b><span class="muted" style="font-size:13px">fijo para ${h(p.name)}</span></div></div>
     <div class="field"><label>Cantidad de paquetes</label>${stepper('pk.n',S.pk.n)}</div>
@@ -586,13 +615,12 @@ function vSuper(){
  <section class="panel"><div class="panel-h"><h2>Historial de visitas</h2></div><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Sucursal</th><th>Supervisor</th><th>Resultado</th><th>Problemas</th><th>Conteo sorpresa</th></tr></thead><tbody>${hist}</tbody></table></div></section>`;
 }
 
+function weekRow(p,r){const ent=r.ent.reduce((a,b)=>a+b,0),cinta=r.ven.reduce((a,b)=>a+b,0),vcalc=r.ini+ent-r.contado,dif=cinta-vcalc,c=p.cost||0;return{ent,cinta,vcalc,dif,c,cEnv:ent*c,cIni:r.ini*c}}
 function vSemana(){
  const w=S.week[S.wsuc];let tot={ven:0,cEnv:0,cIni:0,fv:0,sv:0,fu:0,su:0};
- const body=Object.entries(CATS).map(([k,v])=>`<tr class="cat-row"><td colspan="16">${v[0]}</td></tr>`+PRODUCTS.filter(p=>p.cat===k).map(p=>{const r=w[p.id];const e=r.ent.reduce((a,b)=>a+b,0),vv=r.ven.reduce((a,b)=>a+b,0),d=r.contado-r.esperado,c=p.cost||0;
-  tot.ven+=vv;tot.cEnv+=e*c;tot.cIni+=r.ini*c;if(d<0){tot.fv+=d*c;tot.fu+=d}else{tot.sv+=d*c;tot.su+=d}
-  const cls=d<0?'neg':d>0?'pos':'';
-  return `<tr><td style="white-space:nowrap">${h(p.name)}${p.cost==null?' <span class="pill warn">sin costo</span>':''}</td><td class="r">${r.ini}</td><td class="r">${e||'<span class="muted">0</span>'}</td>${r.ven.map(x=>`<td class="r muted">${x}</td>`).join('')}<td class="r"><b>${vv}</b></td><td class="r">${r.esperado}</td><td class="r">${r.contado}</td><td class="r ${cls}">${d?(d>0?'+':'')+d:'<span class="muted">0</span>'}</td><td class="r ${cls}">${d?moneyS(d*c):'<span class="muted">—</span>'}</td></tr>`}).join('')).join('');
- return `<div class="head"><div><span class="eyebrow">Semana 45 · 2 al 8 de noviembre</span><h1>Cierre semanal</h1><p>Se arma solo con los envíos recibidos y los cierres diarios. El sobrante de un producto cubre el faltante de otro; el neto es lo que realmente falta.</p></div><button class="btn" disabled title="Disponible en la versión real">Exportar a Excel</button></div>
+ PRODUCTS.forEach(p=>{const r=w[p.id];const x=weekRow(p,r);tot.ven+=x.cinta;tot.cEnv+=x.cEnv;tot.cIni+=x.cIni;const d=r.contado-r.esperado;if(d<0){tot.fv+=d*x.c;tot.fu+=d}else{tot.sv+=d*x.c;tot.su+=d}});
+ const cuadro=S.wmode==='cuadro';
+ return `<div class="head"><div><span class="eyebrow">Semana 45 · 2 al 8 de noviembre</span><h1>Cierre semanal</h1><p>Se arma solo con los envíos recibidos y los cierres diarios. El sobrante de un producto cubre el faltante de otro; el neto es lo que realmente falta.</p></div><button class="btn" disabled title="Disponible en la versión real">Descargar PDF</button></div>
  <div class="chips">${SUC.map(s=>{const d=weekDiff(s).neto;return `<button class="chip" data-act="wsuc" data-v="${s}" aria-pressed="${S.wsuc===s}">${s}${d<-5?` · <span style="color:${S.wsuc===s?'inherit':'var(--terra)'}">${money(d)}</span>`:''}</button>`}).join('')}</div>
  <div class="kpis">
   <div class="kpi"><span class="muted">Costo enviado</span><b class="num">${money(tot.cEnv)}</b><span class="muted">inventario inicial ${money(tot.cIni)}</span></div>
@@ -600,8 +628,51 @@ function vSemana(){
   <div class="kpi"><span class="muted">Sobrante</span><b class="num" style="color:var(--olive)">${moneyS(tot.sv)}</b><span class="muted">+${tot.su} unidades</span></div>
   <div class="kpi ${tot.fv+tot.sv<0?'bad':''}"><span class="muted">Neto</span><b class="num">${moneyS(tot.fv+tot.sv)}</b><span class="muted">faltante menos sobrante</span></div>
  </div>
- <section class="panel"><div class="tbl-wrap"><table style="font-size:14px"><thead><tr><th>Producto</th><th class="r">Inicial</th><th class="r">Entró</th>${DAYS.map(d=>`<th class="r">${d}</th>`).join('')}<th class="r">Vendido</th><th class="r">Debía quedar</th><th class="r">Contaron</th><th class="r">Dif.</th><th class="r">Dif. $</th></tr></thead><tbody>${body}</tbody></table></div></section>
- <p class="hint" style="text-align:left">Ventas por día según la cinta que ingresa la sucursal. "Debía quedar" = inicial + entró − vendido; solo la dueña ve esta pantalla. Los costos de este prototipo son de ejemplo.</p>`;
+ <section class="panel"><div class="panel-h"><div class="seg2" role="group" aria-label="Vista"><button data-act="wmode" data-v="resumen" aria-pressed="${!cuadro}">Vista resumida</button><button data-act="wmode" data-v="cuadro" aria-pressed="${cuadro}">Cuadro completo</button></div><span class="muted small">${cuadro?`Mismo orden de columnas que el cuadro RETAIL de ${S.wsuc}`:'Ventas por día según la cinta'}</span></div>
+ ${cuadro?semanaCuadro(w):semanaResumida(w)}</section>
+ <p class="hint" style="text-align:left">${cuadro?'Venta total = inicial + entradas − inventario final contado. Diferencia = venta cinta − venta total (negativo = falta producto).':'"Debía quedar" = inicial + entró − vendido.'} Solo la dueña ve esta pantalla. Los costos de este prototipo son de ejemplo.</p>`;
+}
+function semanaResumida(w){
+ const body=Object.entries(CATS).map(([k,v])=>`<tr class="cat-row"><td colspan="16">${v[0]}</td></tr>`+PRODUCTS.filter(p=>p.cat===k).map(p=>{const r=w[p.id];const e=r.ent.reduce((a,b)=>a+b,0),vv=r.ven.reduce((a,b)=>a+b,0),d=r.contado-r.esperado,c=p.cost||0;const cls=d<0?'neg':d>0?'pos':'';
+  return `<tr><td style="white-space:nowrap">${h(p.name)}${p.cost==null?' <span class="pill warn">sin costo</span>':''}</td><td class="r">${r.ini}</td><td class="r">${e||'<span class="muted">0</span>'}</td>${r.ven.map(x=>`<td class="r muted">${x}</td>`).join('')}<td class="r"><b>${vv}</b></td><td class="r">${r.esperado}</td><td class="r">${r.contado}</td><td class="r ${cls}">${d?(d>0?'+':'')+d:'<span class="muted">0</span>'}</td><td class="r ${cls}">${d?moneyS(d*c):'<span class="muted">—</span>'}</td></tr>`}).join('')).join('');
+ return `<div class="tbl-wrap"><table style="font-size:14px"><thead><tr><th>Producto</th><th class="r">Inicial</th><th class="r">Entró</th>${DAYS.map(d=>`<th class="r">${d}</th>`).join('')}<th class="r">Vendido</th><th class="r">Debía quedar</th><th class="r">Contaron</th><th class="r">Dif.</th><th class="r">Dif. $</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function semanaCuadro(w){
+ const z=v=>v?v:'<span class="muted">0</span>';
+ const moneyZ=v=>v?money(v):'<span class="muted">—</span>';
+ let G={ent:0,vcalc:0,cinta:0,dif:0,cEnv:0,cIni:0};
+ const body=Object.entries(CATS).map(([k,v])=>{let T={ent:0,vcalc:0,cinta:0,dif:0,cEnv:0,cIni:0};
+  const rows=PRODUCTS.filter(p=>p.cat===k).map(p=>{const r=w[p.id];const x=weekRow(p,r);for(const f in T){T[f]+=x[f];G[f]+=x[f]}
+   let prev=r.ini;const days=r.ent.map((e,d)=>{const ini=prev,ve=r.ven[d],rest=ini+e-ve;prev=rest;return `<td class="d0">${ini}</td><td>${z(e)}</td><td>${z(ve)}</td><td class="muted">${rest}</td>`}).join('');
+   const cls=x.dif<0?'neg':x.dif>0?'pos':'';
+   return `<tr><td class="stick">${h(p.name)}</td><td class="d0">${r.ini}</td><td><span class="muted">0</span></td>${days}<td class="d0"><b>${r.contado}</b></td><td>${x.ent}</td><td>${x.vcalc}</td><td>${x.cinta}</td><td class="${cls}">${x.dif?(x.dif>0?'+':'')+x.dif:'<span class="muted">0</span>'}</td><td class="d0">${p.cost==null?'<span class="pill warn">sin costo</span>':money(p.cost)}</td><td>${moneyZ(x.cEnv)}</td><td>${moneyZ(x.cIni)}</td><td><b>${moneyZ(x.cEnv+x.cIni)}</b></td></tr>`}).join('');
+  return `<tr class="cat-row"><td class="stick" colspan="1">${v[0]}</td><td colspan="39"></td></tr>${rows}<tr class="sub"><td class="stick">Total ${v[0].toLowerCase()}</td><td colspan="30" class="d0"></td><td class="d0"></td><td>${T.ent}</td><td>${T.vcalc}</td><td>${T.cinta}</td><td class="${T.dif<0?'neg':''}">${T.dif}</td><td class="d0"></td><td>${money(T.cEnv)}</td><td>${money(T.cIni)}</td><td>${money(T.cEnv+T.cIni)}</td></tr>`}).join('');
+ return `<div class="tbl-wrap xl"><table><thead>
+ <tr><th rowspan="2" class="stick">Producto</th><th rowspan="2" class="d0">Inv. inicial</th><th rowspan="2">Faltante</th>${DAYN.map(d=>`<th colspan="4" class="dayh d0">${d}</th>`).join('')}<th rowspan="2" class="d0">Inventario final</th><th rowspan="2">Entrada total</th><th rowspan="2">Venta total</th><th rowspan="2">Venta cinta</th><th rowspan="2">Diferencia</th><th rowspan="2" class="d0">Precio de costo</th><th rowspan="2">Total costo enviado</th><th rowspan="2">Total costo inv. inicial</th><th rowspan="2">Total costo semanal</th></tr>
+ <tr>${DAYN.map(()=>`<th class="d0">Inicia</th><th>Entra</th><th>Venta</th><th>Restante</th>`).join('')}</tr></thead>
+ <tbody>${body}<tr class="sub grand"><td class="stick">Total semana</td><td colspan="30" class="d0"></td><td class="d0"></td><td>${G.ent}</td><td>${G.vcalc}</td><td>${G.cinta}</td><td class="${G.dif<0?'neg':''}">${G.dif}</td><td class="d0"></td><td>${money(G.cEnv)}</td><td>${money(G.cIni)}</td><td>${money(G.cEnv+G.cIni)}</td></tr></tbody></table></div>`;
+}
+
+function vProductos(){
+ const f=S.pf||'todos';const sin=PRODUCTS.filter(p=>p.cost==null&&p.active!==false).length;
+ const list=PRODUCTS.filter(p=>f==='todos'||(f==='sincosto'?p.cost==null:p.cat===f));
+ const rows=list.map(p=>`<tr class="${p.active===false?'off':''}"><td>${prodCell(p,CATS[p.cat][0])}</td>
+  <td class="r"><span class="money-in">$<input data-prod="${p.id}" data-field="cost" inputmode="decimal" value="${p.cost==null?'':p.cost.toFixed(2)}" placeholder="Sin costo" aria-label="Costo de ${h(p.name)}"></span>${p.costLog?`<br><span class="muted small">${h(p.costLog.by)} · ${p.costLog.at}${p.costLog.old!=null?' · antes '+money(p.costLog.old):''}</span>`:''}</td>
+  <td class="r"><input class="pack-in" data-prod="${p.id}" data-field="pack" inputmode="numeric" value="${p.pack}" aria-label="Unidades por paquete"> <span class="muted small">u</span></td>
+  <td class="r num">${S.stock[p.id]}</td>
+  <td class="r"><button class="toggle" data-act="pact" data-v="${p.id}" aria-pressed="${p.active!==false}"><i></i>${p.active!==false?'Activo':'Inactivo'}</button></td></tr>`).join('');
+ return `<div class="head"><div><span class="eyebrow">Catálogo</span><h1>Productos</h1><p>Productos, costos y tamaño de paquete. Reemplaza las columnas de producto y costo del Excel; cada cambio de costo queda registrado.</p></div></div>
+ ${sin?`<div class="banner"><span><b>${sin} productos sin costo.</b> No suman en dinero en el cierre semanal hasta que se les ponga precio.</span><button class="btn" data-act="pf" data-v="sincosto">Ver cuáles</button></div>`:''}
+ <div class="chips"><button class="chip" data-act="pf" data-v="todos" aria-pressed="${f==='todos'}">Todos · ${PRODUCTS.length}</button>${Object.entries(CATS).map(([k,v])=>`<button class="chip" data-act="pf" data-v="${k}" aria-pressed="${f===k}">${v[0]}</button>`).join('')}<button class="chip" data-act="pf" data-v="sincosto" aria-pressed="${f==='sincosto'}">Sin costo · ${PRODUCTS.filter(p=>p.cost==null).length}</button></div>
+ <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Costo</th><th class="r">Por paquete</th><th class="r">En bodega</th><th class="r">Estado</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="muted">No hay productos en este filtro.</td></tr>'}</tbody></table></div></section>
+ <section class="panel stack"><h2>Agregar producto</h2>
+  <div class="row" style="align-items:flex-end;gap:14px">
+   <div class="field" style="flex:2;min-width:200px"><label for="npn">Nombre</label><input id="npn" data-key="np.name" value="${h(S.np.name)}" placeholder="Ej. Jugo de naranja"></div>
+   <div class="field" style="flex:1;min-width:160px"><label for="npc">Categoría</label><select id="npc" data-key="np.cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}"${S.np.cat===k?' selected':''}>${v[0]}</option>`).join('')}</select></div>
+   <div class="field" style="width:120px"><label for="npco">Costo ($)</label><input id="npco" data-key="np.cost" inputmode="decimal" value="${h(S.np.cost)}" placeholder="0.00"></div>
+   <div class="field" style="width:120px"><label for="npp">Por paquete</label><input id="npp" data-key="np.pack" inputmode="numeric" value="${h(S.np.pack)}" placeholder="${CATS[S.np.cat][1]}"></div>
+   <button class="btn primary" data-act="padd">Agregar</button>
+  </div></section>`;
 }
 
 function vEquipo(){
@@ -612,7 +683,7 @@ function vEquipo(){
 }
 
 function office(){
- const views={resumen:vResumen,ingreso:vIngreso,paquetes:vPaquetes,distribucion:vDistrib,envios:vEnvios,supervision:vSuper,semana:vSemana,equipo:vEquipo};
+ const views={resumen:vResumen,ingreso:vIngreso,paquetes:vPaquetes,distribucion:vDistrib,envios:vEnvios,supervision:vSuper,semana:vSemana,productos:vProductos,equipo:vEquipo};
  const groups=NAV[S.user.role];
  const counts={distribucion:SUC.filter(s=>S.plan[s].days.includes(TODAY)&&!S.todayEnv[s]).length,supervision:S.visits.some(v=>v.ago===0)?0:1};
  const label=groups.flatMap(g=>g[1]).find(x=>x[0]===S.view)[1];const grp=groups.find(g=>g[1].some(x=>x[0]===S.view))[0];
@@ -666,20 +737,20 @@ function tScan(){
  </div>`;
 }
 function tCierre(){
- const cd=S.cd;const list=PRODUCTS.filter(p=>p.cat===cd.cat);const done=Object.keys(cd.quedan).filter(k=>cd.quedan[k]!=='').length;
+ const cd=S.cd;const list=ACTIVE().filter(p=>p.cat===cd.cat);const done=Object.keys(cd.quedan).filter(k=>cd.quedan[k]!=='').length;
  if(cd.confirm){const vend=Object.values(cd.vend).reduce((a,b)=>a+(+b||0),0);
   return `<button class="back" data-act="cdBack">← Volver al conteo</button><h1>Cerrar el día</h1>
-  <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="kpi"><span class="muted">Productos contados</span><b>${done} / ${PRODUCTS.length}</b></div><div class="kpi"><span class="muted">Unidades vendidas</span><b>${vend}</b></div><div class="kpi"><span class="muted">Total de la cinta</span><b>$${(+cd.cinta||0).toFixed(2)}</b></div></div>
+  <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="kpi"><span class="muted">Productos contados</span><b>${done} / ${ACTIVE().length}</b></div><div class="kpi"><span class="muted">Unidades vendidas</span><b>${vend}</b></div><div class="kpi"><span class="muted">Total de la cinta</span><b>$${(+cd.cinta||0).toFixed(2)}</b></div></div>
   <p class="muted" style="font-size:16px;margin:0">Una vez cerrado ya no se puede cambiar desde la tablet. Si hay un error, avise a oficina central.</p>
   <div class="row"><button class="tbtn primary" data-act="approveCd">Cerrar con mi PIN</button><button class="tbtn ghost" data-act="cdBack">Volver</button></div>`}
  return `<button class="back" data-act="tview" data-v="home">← Inicio</button>
  <div class="row" style="justify-content:space-between;align-items:flex-end"><div><h1>Cierre del día</h1><p class="muted" style="margin:4px 0 0;font-size:16px">Anote lo vendido según la cinta y <b>cuente físicamente</b> cuánto queda de cada producto.</p></div>
- <div style="min-width:220px"><div class="row" style="justify-content:space-between"><span class="muted">Contados</span><b id="cdprog">${done} de ${PRODUCTS.length}</b></div><div class="progress"><i id="cdbar" style="width:${done/PRODUCTS.length*100}%"></i></div></div></div>
- <div class="chips">${Object.entries(CATS).map(([k,v])=>{const c=PRODUCTS.filter(p=>p.cat===k);const d=c.filter(p=>cd.quedan[p.id]!==undefined&&cd.quedan[p.id]!=='').length;return `<button class="chip" style="padding:10px 16px;font-size:15px" data-act="cdcat" data-v="${k}" aria-pressed="${cd.cat===k}">${v[0]} · ${d}/${c.length}</button>`}).join('')}</div>
+ <div style="min-width:220px"><div class="row" style="justify-content:space-between"><span class="muted">Contados</span><b id="cdprog">${done} de ${ACTIVE().length}</b></div><div class="progress"><i id="cdbar" style="width:${done/ACTIVE().length*100}%"></i></div></div></div>
+ <div class="chips">${Object.entries(CATS).map(([k,v])=>{const c=ACTIVE().filter(p=>p.cat===k);const d=c.filter(p=>cd.quedan[p.id]!==undefined&&cd.quedan[p.id]!=='').length;return `<button class="chip" style="padding:10px 16px;font-size:15px" data-act="cdcat" data-v="${k}" aria-pressed="${cd.cat===k}">${v[0]} · ${d}/${c.length}</button>`}).join('')}</div>
  <div>${list.map(p=>`<div class="cd-row ${cd.quedan[p.id]!==undefined&&cd.quedan[p.id]!==''?'done':''}" data-row="${p.id}"><div class="prod">${thumb(p)}<b>${h(p.name)}</b></div><div><div class="lab">Vendidos (cinta)</div>${stepper('cd.vend.'+p.id,cd.vend[p.id],'t-step')}</div><div><div class="lab">Quedan (contados)</div>${stepper('cd.quedan.'+p.id,cd.quedan[p.id],'t-step')}</div></div>`).join('')}</div>
  <div class="sticky-foot"><div class="field"><label for="cinta">Total de la cinta ($)</label><input id="cinta" data-key="cd.cinta" inputmode="decimal" value="${h(cd.cinta)}" placeholder="0.00" style="height:52px;font-size:18px;width:160px"></div>
  <button class="tbtn ghost" data-act="cdFill" title="Solo para probar el prototipo">Llenar ejemplo</button>
- <button class="tbtn primary" data-act="cdConfirm" style="margin-left:auto" id="cdgo" ${done===PRODUCTS.length?'':'disabled'}>${done===PRODUCTS.length?'Revisar y cerrar':`Faltan ${PRODUCTS.length-done} por contar`}</button></div>`;
+ <button class="tbtn primary" data-act="cdConfirm" style="margin-left:auto" id="cdgo" ${done===ACTIVE().length?'':'disabled'}>${done===ACTIVE().length?'Revisar y cerrar':`Faltan ${ACTIVE().length-done} por contar`}</button></div>`;
 }
 function tablet(){
  const views={home:tHome,recibir:tRecibir,scan:tScan,cierre:tCierre};
@@ -748,6 +819,13 @@ document.addEventListener('click',ev=>{
  case 'planEdit':S.planEdit=v;break;
  case 'planDone':{const it=S.plan[S.planEdit].items;for(const k in it)if(!(+it[k]>0))delete it[k];S.planEdit=null;toast('Pedido base guardado');break}
  case 'wsuc':S.wsuc=v;break;
+ case 'wmode':S.wmode=v;break;
+ case 'pf':S.pf=v;break;
+ case 'pact':{const p=P[v];p.active=p.active===false;toast(p.active?h(p.name)+' activo de nuevo':h(p.name)+' desactivado: ya no aparece en tablets ni en ingresos');break}
+ case 'padd':{const N=S.np;const name=(N.name||'').trim();if(!name){toast('Escriba el nombre del producto.');return}if(PRODUCTS.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast('Ya existe un producto con ese nombre.');return}
+   const id='p'+String(PRODUCTS.length+1).padStart(2,'0');const cost=parseFloat(N.cost);const p={id,name,cat:N.cat,cost:isNaN(cost)?null:cost,pack:parseInt(N.pack)||CATS[N.cat][1]};PRODUCTS.push(p);P[id]=p;S.stock[id]=0;
+   SUC.forEach(x=>S.week[x][id]={ini:0,ent:[0,0,0,0,0,0,0],ven:[0,0,0,0,0,0,0],esperado:0,contado:0});
+   S.np={name:'',cat:N.cat,cost:'',pack:''};S.pf=N.cat;S.log.unshift({t:nowT(),txt:h(S.user.name)+' agregó el producto <b>'+h(name)+'</b>'});toast(h(name)+' agregado al catálogo');break}
  /* supervisión */
  case 'vStart':{const pool=PRODUCTS.filter(p=>p.cost!=null);const pick=[];while(pick.length<3){const p=pool[ri(0,pool.length-1)].id;if(!pick.includes(p))pick.push(p)}
    S.visit={suc:v,res:{},notes:{},conteo:pick,counts:{},sistema:Object.fromEntries(pick.map(p=>[p,ri(4,18)]))};break}
@@ -771,7 +849,7 @@ document.addEventListener('click',ev=>{
  case 'approveRec':openPin('Aprobar recepción',SUC_USERS[S.suc],user=>{const sent=commit('rec',{envio:S.scan.envio,scanned:[...S.scan.scanned],damaged:[...S.scan.damaged],user,at:nowT()});if(!sent)S.envios.find(x=>x.id===S.scan.envio).localDone=true;
    toast(sent?'Recepción aprobada. Oficina central ya la ve.':'Guardado en la tablet. Se enviará cuando vuelva el internet.');S.scan=null;S.tview='home'});return;
  case 'cdcat':S.cd.cat=v;break;
- case 'cdFill':PRODUCTS.forEach(p=>{if(S.cd.vend[p.id]===undefined||S.cd.vend[p.id]==='')S.cd.vend[p.id]=String(ri(0,6));if(S.cd.quedan[p.id]===undefined||S.cd.quedan[p.id]==='')S.cd.quedan[p.id]=String(ri(0,15))});if(!S.cd.cinta)S.cd.cinta='184.35';break;
+ case 'cdFill':ACTIVE().forEach(p=>{if(S.cd.vend[p.id]===undefined||S.cd.vend[p.id]==='')S.cd.vend[p.id]=String(ri(0,6));if(S.cd.quedan[p.id]===undefined||S.cd.quedan[p.id]==='')S.cd.quedan[p.id]=String(ri(0,15))});if(!S.cd.cinta)S.cd.cinta='184.35';break;
  case 'cdConfirm':S.cd.confirm=true;break;
  case 'cdBack':S.cd.confirm=false;break;
  case 'approveCd':openPin('Cerrar el día en '+S.suc,SUC_USERS[S.suc],user=>{const sent=commit('cd',{suc:S.suc,user,at:nowT(),cinta:S.cd.cinta});
@@ -791,14 +869,21 @@ function doScan(code){const sc=S.scan;const e=S.envios.find(x=>x.id===sc.envio);
  else{sc.scanned.push(code);sc.msg={k:'ok',t:`✓ ${h(P[pk.pid].name)} · ${pk.units} unidades`}}}
 
 function after(k){
- if(k.startsWith('cd.quedan')){const done=PRODUCTS.filter(p=>S.cd.quedan[p.id]!==undefined&&S.cd.quedan[p.id]!=='').length;const pr=document.getElementById('cdprog');if(pr)pr.textContent=`${done} de ${PRODUCTS.length}`;const bar=document.getElementById('cdbar');if(bar)bar.style.width=done/PRODUCTS.length*100+'%';
-  const row=document.querySelector(`[data-row="${k.split('.')[2]}"]`);if(row)row.classList.toggle('done',getKey(k)!=='');const go=document.getElementById('cdgo');if(go){go.disabled=done<PRODUCTS.length;go.textContent=done<PRODUCTS.length?`Faltan ${PRODUCTS.length-done} por contar`:'Revisar y cerrar'}
-  document.querySelectorAll('[data-act="cdcat"]').forEach(c=>{const ps=PRODUCTS.filter(p=>p.cat===c.dataset.v);c.textContent=`${CATS[c.dataset.v][0]} · ${ps.filter(p=>S.cd.quedan[p.id]!==undefined&&S.cd.quedan[p.id]!=='').length}/${ps.length}`})}
+ if(k.startsWith('cd.quedan')){const done=ACTIVE().filter(p=>S.cd.quedan[p.id]!==undefined&&S.cd.quedan[p.id]!=='').length;const pr=document.getElementById('cdprog');if(pr)pr.textContent=`${done} de ${ACTIVE().length}`;const bar=document.getElementById('cdbar');if(bar)bar.style.width=done/ACTIVE().length*100+'%';
+  const row=document.querySelector(`[data-row="${k.split('.')[2]}"]`);if(row)row.classList.toggle('done',getKey(k)!=='');const go=document.getElementById('cdgo');if(go){go.disabled=done<ACTIVE().length;go.textContent=done<ACTIVE().length?`Faltan ${ACTIVE().length-done} por contar`:'Revisar y cerrar'}
+  document.querySelectorAll('[data-act="cdcat"]').forEach(c=>{const ps=ACTIVE().filter(p=>p.cat===c.dataset.v);c.textContent=`${CATS[c.dataset.v][0]} · ${ps.filter(p=>S.cd.quedan[p.id]!==undefined&&S.cd.quedan[p.id]!=='').length}/${ps.length}`})}
  if(k.startsWith('ing.qty')){const tot=Object.values(S.ing.qty).reduce((a,b)=>a+(+b||0),0);const cnt=Object.values(S.ing.qty).filter(v=>+v>0).length;document.getElementById('ingtot').textContent=`${cnt} productos · ${tot} unidades`;document.getElementById('ingbtn').disabled=!tot}
  if(k==='pk.n'||k.startsWith('visit.counts')||k.startsWith('plan.'))render();
 }
 document.addEventListener('input',ev=>{const k=ev.target.dataset.key;if(!k||k==='planAdd')return;let v=ev.target.value;if(ev.target.inputMode==='numeric'){v=v.replace(/\D/g,'');ev.target.value=v}setKey(k,v);if(k!=='pk.n'&&!k.startsWith('visit.counts')&&!k.startsWith('plan.'))after(k)});
-document.addEventListener('change',ev=>{const k=ev.target.dataset.key;if(!k)return;
+document.addEventListener('change',ev=>{
+ const pr=ev.target.dataset.prod;
+ if(pr){const p=P[pr];
+  if(ev.target.dataset.field==='cost'){const v=parseFloat(ev.target.value);const nv=isNaN(v)?null:Math.round(v*100)/100;
+   if(nv!==p.cost){p.costLog={by:S.user.name,at:'hoy '+nowT(),old:p.cost};p.cost=nv;S.log.unshift({t:nowT(),txt:h(S.user.name)+' cambió el costo de <b>'+h(p.name)+'</b> a '+(nv==null?'sin costo':money(nv))});toast('Costo de '+h(p.name)+' actualizado')}}
+  else{const v=parseInt(ev.target.value);if(v>0)p.pack=v}
+  render();return}
+ const k=ev.target.dataset.key;if(!k)return;if(k==='np.cat')render();
  if(k==='pk.pid'){S.pk.per=P[S.pk.pid].pack;S.lastBatch=[];render()}
  if(k==='pk.n'){if(!(+S.pk.n>0))S.pk.n='1';render()}
  if(k==='planAdd'&&ev.target.value){S.plan[S.planEdit].items[ev.target.value]='1';render()}
