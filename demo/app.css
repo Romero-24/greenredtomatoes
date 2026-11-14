@@ -14,6 +14,18 @@
 .who-card .lock{font-size:12px;color:var(--muted)}
 input.pin-hidden{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 
+/* Foto de la cinta */
+.cinta-box{border-style:dashed}
+.thumbs{display:flex;gap:10px;flex-wrap:wrap}
+.thumbs .th{position:relative;width:96px;height:128px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:var(--sunk);display:grid;place-items:center;text-align:center;padding:4px}
+.thumbs.big .th{width:180px;height:260px}
+.thumbs .th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.thumbs .th button{position:absolute;top:4px;right:4px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:16px;padding:0}
+.auto-tag{font-size:12px;font-weight:600;color:var(--olive)}
+.linkbtn{border:0;background:transparent;padding:2px 0;color:var(--ink);font-size:12.5px;font-weight:600;text-decoration:underline;text-underline-offset:2px}
+.modal.wide{max-width:640px}
+details summary{cursor:pointer;color:var(--muted)}
+
 /* Login */
 .auth{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:#FFFFFF;padding-block:32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .auth-card{width:100%;max-width:400px;border:1px solid var(--line);border-radius:16px;padding:32px 30px;display:flex;flex-direction:column;gap:18px;background:#FFFFFF;box-shadow:0 18px 40px -24px rgba(29,58,39,.35)}

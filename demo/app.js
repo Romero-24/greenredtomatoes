@@ -137,7 +137,7 @@ async function cargarOficina() {
       q(sb.from('paquetes').select('codigo,producto_id,unidades,indice,de_total,creado_en,creado_por').eq('estado', 'bodega').order('codigo')),
       q(sb.from('v_stock_bodega').select('*')),
       q(sb.from('bitacora').select('*').order('en', { ascending: false }).limit(40)),
-      q(sb.from('cierres').select('sucursal_id,fecha,firmado_por,cerrado_en,cinta_total').gte('fecha', addDays(hoy(), -3)).order('fecha', { ascending: false })),
+      q(sb.from('cierres').select('*').gte('fecha', addDays(hoy(), -3)).order('fecha', { ascending: false })),
       q(sb.from('visitas').select('*, visita_respuestas(*), visita_conteos(*)').gte('fecha', addDays(hoy(), -35)).order('fecha', { ascending: false })),
       q(sb.from('ingresos').select('id,cerrado_en,cerrado_por,proveedores(nombre),ingreso_items(unidades)').order('id', { ascending: false }).limit(10)),
       q(sb.from('perfiles').select('nombre,rol,enfoque,sucursal_id')),
@@ -227,7 +227,8 @@ function vResumen() {
     const e = envioHoy(s.id); const lv = ultimaVisita(s.id); const n = S.netoPrev?.[s.id]; const neto = n ? n.f + n.s : null;
     const env = tocaHoy(s.id) ? (e ? ST[e.estado] : '<span class="pill neutral">Por despachar</span>') : '<span class="muted">No toca hoy</span>';
     const vis = lv ? `${diasDesde(lv.fecha) === 0 ? 'Hoy' : diasDesde(lv.fecha) === 1 ? 'Ayer' : 'Hace ' + diasDesde(lv.fecha) + ' días'} <span class="muted small">· ${visitOk(lv)}/${lv.visita_respuestas.length}</span>` : '<span class="muted">—</span>';
-    return `<tr><td><b>${h(s.nombre)}</b></td><td>${c ? `<span class="pill ok">${h(c.firmado_por)} · ${fHora(c.cerrado_en)}</span>` : `<span class="pill neutral">Pendiente</span>${ult ? `<br><span class="muted small">Último: ${fCuando(ult.cerrado_en)}</span>` : ''}`}</td><td>${env}</td><td>${vis}</td><td class="r ${neto < -5 ? 'neg' : neto > 0 ? 'pos' : ''}">${neto == null ? '<span class="muted">…</span>' : moneyS(neto)}</td></tr>`;
+    const verUlt = ult ? `<button class="linkbtn" data-act="verCierre" data-v="${ult.id}">${c ? 'Ver cierre' : 'Último: ' + fCuando(ult.cerrado_en)}${ult.foto_cinta ? ' · 📷' : ''}</button>` : '';
+    return `<tr><td><b>${h(s.nombre)}</b></td><td>${c ? `<span class="pill ok">${h(c.firmado_por)} · ${fHora(c.cerrado_en)}</span><br>${verUlt}` : `<span class="pill neutral">Pendiente</span>${ult ? `<br>${verUlt}` : ''}`}</td><td>${env}</td><td>${vis}</td><td class="r ${neto < -5 ? 'neg' : neto > 0 ? 'pos' : ''}">${neto == null ? '<span class="muted">…</span>' : moneyS(neto)}</td></tr>`;
   }).join('');
   return head(fechaLarga(), 'Resumen de operación', 'Estado de las 7 sucursales, la distribución de hoy, las visitas de supervisión y las diferencias de inventario. Se actualiza solo.') + `
   <div class="kpis">
@@ -581,11 +582,68 @@ function tCierre() {
   return `<button class="back" data-act="tview" data-v="home">← Inicio</button>
   <div class="row" style="justify-content:space-between;align-items:flex-end"><div><h1>Cierre del día</h1><p class="muted" style="margin:4px 0 0;font-size:16px">Anote lo vendido según la cinta y <b>cuente físicamente</b> cuánto queda de cada producto.</p></div>
   <div style="min-width:220px"><div class="row" style="justify-content:space-between"><span class="muted">Contados</span><b id="cdprog">${done} de ${prods.length}</b></div><div class="progress"><i id="cdbar" style="width:${prods.length ? done / prods.length * 100 : 0}%"></i></div></div></div>
+  ${cintaBox(cd)}
   <div class="chips">${S.cats.map(c => { const ps = prods.filter(p => p.categoria_id === c.id); const d = ps.filter(p => cd.quedan[p.id] !== undefined && cd.quedan[p.id] !== '').length; return `<button class="chip" style="padding:10px 16px;font-size:15px" data-act="cdcat" data-v="${c.id}" aria-pressed="${cd.cat === c.id}">${h(c.nombre)} · ${d}/${ps.length}</button>`; }).join('')}</div>
-  <div>${list.map(p => `<div class="cd-row ${cd.quedan[p.id] !== undefined && cd.quedan[p.id] !== '' ? 'done' : ''}" data-row="${p.id}"><div class="prod">${thumb(p)}<b>${h(p.nombre)}</b></div><div><div class="lab">Vendidos (cinta)</div>${stepper('t.cd.vend.' + p.id, cd.vend[p.id], 't-step')}</div><div><div class="lab">Quedan (contados)</div>${stepper('t.cd.quedan.' + p.id, cd.quedan[p.id], 't-step')}</div></div>`).join('')}</div>
+  <div>${list.map(p => `<div class="cd-row ${cd.quedan[p.id] !== undefined && cd.quedan[p.id] !== '' ? 'done' : ''}" data-row="${p.id}"><div class="prod">${thumb(p)}<span><b>${h(p.nombre)}</b>${cd.auto?.[p.id] !== undefined ? `<br><span class="auto-tag">De la cinta: ${cd.auto[p.id]}</span>` : ''}</span></div><div><div class="lab">Vendidos (cinta)</div>${stepper('t.cd.vend.' + p.id, cd.vend[p.id], 't-step')}</div><div><div class="lab">Quedan (contados)</div>${stepper('t.cd.quedan.' + p.id, cd.quedan[p.id], 't-step')}</div></div>`).join('')}</div>
   <div class="sticky-foot"><div class="field"><label for="cinta">Total de la cinta ($)</label><input id="cinta" data-key="t.cd.cinta" inputmode="decimal" value="${h(cd.cinta)}" placeholder="0.00" style="height:52px;font-size:18px;width:160px"></div>
   <button class="tbtn primary" data-act="cdConfirm" style="margin-left:auto" id="cdgo" ${done === prods.length && prods.length ? '' : 'disabled'}>${done === prods.length ? 'Revisar y cerrar' : `Faltan ${prods.length - done} por contar`}</button></div>`;
 }
+/* ---------- foto de la cinta ---------- */
+function cintaBox(cd) {
+  const L = cd.lectura; const fotos = cd.fotosLocal || [];
+  const sinProducto = (L?.items || []).filter(i => i.producto_id == null);
+  const conProducto = (L?.items || []).filter(i => i.producto_id != null);
+  const fechaMal = L?.fecha && L.fecha !== hoy();
+  return `<div class="panel stack cinta-box">
+   <div class="row" style="justify-content:space-between;align-items:flex-start"><div><h3>Cinta de la caja</h3><span class="muted small">Tome foto del <b>cierre de día</b> y del <b>reporte de ventas de items</b>. Si la cinta es larga, tome varias fotos. Es opcional: también puede anotar todo a mano.</span></div>
+   <div class="row"><label class="tbtn primary" for="fcam" style="display:inline-flex;align-items:center">Tomar foto</label><label class="tbtn" for="fgal" style="display:inline-flex;align-items:center">Subir foto</label></div></div>
+   <input type="file" id="fcam" accept="image/*" capture="environment" hidden><input type="file" id="fgal" accept="image/*" multiple hidden>
+   ${fotos.length ? `<div class="thumbs">${fotos.map((f, i) => `<div class="th"><img src="${f.url}" alt="Foto ${i + 1} de la cinta">${cd.leyendo || cd.lectura ? '' : `<button data-act="fotoDel" data-v="${i}" aria-label="Quitar foto">×</button>`}</div>`).join('')}</div>` : ''}
+   ${fotos.length && !cd.leyendo && !cd.lectura ? `<div><button class="tbtn primary" data-act="leerCinta">Leer cinta (${fotos.length} ${fotos.length === 1 ? 'foto' : 'fotos'})</button></div>` : ''}
+   ${cd.leyendo ? '<div class="flash warn">Leyendo la cinta… tarda unos segundos.</div>' : ''}
+   ${cd.cintaErr ? `<div class="err">${h(cd.cintaErr)}</div>` : ''}
+   ${L ? `<div class="stack" style="gap:8px">
+     ${!L.legible ? '<div class="err">No se pudo leer la cinta. Tome la foto más de cerca, con buena luz, o anote los datos a mano.</div>' : ''}
+     ${fechaMal ? `<div class="err">Ojo: la cinta es del ${h(L.fecha.split('-').reverse().join('/'))}, no de hoy.</div>` : ''}
+     <div class="row" style="gap:18px">${L.total != null ? `<span>Total de la cinta: <b>$${(+L.total).toFixed(2)}</b></span>` : ''}${(L.pagos || []).map(p => `<span class="muted small">${h(p.forma)}: ${p.monto != null ? '$' + (+p.monto).toFixed(2) : '?'}</span>`).join('')}</div>
+     ${conProducto.length ? `<div class="flash ok">Se llenaron <b>${Object.keys(cd.auto || {}).length}</b> productos con lo vendido según la cinta. Revíselos abajo y corrija si algo no cuadra.</div>` : ''}
+     ${sinProducto.length ? `<details><summary class="small">${sinProducto.length} artículos de la cinta no son de inventario (comida del menú, etc.)</summary><div class="small muted" style="margin-top:6px">${sinProducto.map(i => h(i.texto) + (i.cantidad != null ? ' (' + i.cantidad + ')' : '')).join(' · ')}</div></details>` : ''}
+     ${(L.anulados || []).length ? `<span class="small muted">Anulados: ${L.anulados.map(a => h(a.producto) + (a.cantidad ? ' (' + a.cantidad + ')' : '')).join(', ')}</span>` : ''}
+     ${L.observaciones ? `<span class="small muted">Nota de la lectura: ${h(L.observaciones)}</span>` : ''}
+     <div><button class="btn" data-act="cintaOtra">Tomar otra foto y volver a leer</button></div></div>` : ''}
+  </div>`;
+}
+async function comprimir(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = url; });
+    const max = 2200; const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const dataUrl = c.toDataURL('image/jpeg', 0.85);
+    return { url: dataUrl, data: dataUrl.split(',')[1], media_type: 'image/jpeg' };
+  } finally { URL.revokeObjectURL(url); }
+}
+async function leerCinta() {
+  const cd = S.t.cd; cd.leyendo = true; cd.cintaErr = ''; render();
+  try {
+    const { data, error } = await sb.functions.invoke('leer-cinta', { body: { imagenes: cd.fotosLocal.map(f => ({ data: f.data, media_type: f.media_type })) } });
+    if (error) throw error;
+    cd.fotos = data.fotos || [];
+    if (data.error) { cd.cintaErr = data.error; }
+    else {
+      const L = data.lectura; cd.lectura = L; cd.auto = {};
+      if (L.total != null) cd.cinta = String(L.total);
+      const ids = new Set(S.t.prods.map(p => p.id));
+      for (const it of L.items || []) if (it.producto_id != null && ids.has(it.producto_id) && it.cantidad != null) cd.auto[it.producto_id] = (cd.auto[it.producto_id] || 0) + it.cantidad;
+      for (const [pid, n] of Object.entries(cd.auto)) cd.vend[pid] = String(n);
+    }
+  } catch (e) {
+    cd.cintaErr = esRed(e) ? 'Sin internet no se puede leer la cinta. Anote los datos a mano.' : 'No se pudo leer la cinta: ' + errMsg(e) + '. Anote los datos a mano.';
+  }
+  cd.leyendo = false; render();
+}
+
 function tablet() {
   const views = { home: tHome, recibir: tRecibir, scan: tScan, cierre: tCierre };
   return `<header class="top"><div class="top-in"><span class="brand">${LOGO}<span class="sep"></span><span class="app">Operación</span></span><span class="proto">Demo</span><div class="me"><span><b>${h(S.perfil?.nombre || 'Tablet')}</b><br><span class="muted small">Sucursal</span></span><button class="btn" data-act="logoutTablet">Salir</button></div></div></header>
@@ -612,8 +670,24 @@ async function flushQueue() {
 /* ---------- PIN de firma en la tablet ---------- */
 function pedirFirma(titulo, accion) { S.modal = { tipo: 'firma', titulo, user: S.t.personal[0], pin: '', err: '', busy: false, accion }; renderModal(); }
 function confirmar(titulo, texto, okLabel, accion, peligro) { S.modal = { tipo: 'confirm', titulo, texto, okLabel, accion, peligro, err: '', busy: false }; renderModal(); }
+async function verCierre(id) {
+  const c = S.cierres.find(x => x.id === +id); if (!c) return;
+  const L = c.cinta_lectura || null; const fotos = L?.fotos || (c.foto_cinta ? [c.foto_cinta] : []);
+  const body = () => `<p class="muted" style="margin:0">${h(sucNombre(c.sucursal_id))} · ${fFecha(c.fecha)} · firmó ${h(c.firmado_por)} a las ${fHora(c.cerrado_en)}</p>
+   <div class="row" style="gap:18px"><span>Total registrado: <b>$${(+c.cinta_total || 0).toFixed(2)}</b></span>${L?.total != null && Math.abs(+L.total - +c.cinta_total) > 0.009 ? `<span class="neg">La cinta leída dice $${(+L.total).toFixed(2)}</span>` : ''}</div>
+   ${L?.pagos?.length ? `<table><tbody>${L.pagos.map(p => `<tr><td>${h(p.forma)}${p.transacciones != null ? ` <span class="muted small">(${p.transacciones})</span>` : ''}</td><td class="r">${p.monto != null ? money(+p.monto) : '?'}</td></tr>`).join('')}</tbody></table>` : ''}
+   ${L?.anulados?.length ? `<div class="small"><b>Anulados:</b> ${L.anulados.map(a => `${h(a.producto)} (${a.cantidad ?? '?'}) ${a.monto != null ? money(+a.monto) : ''}`).join(' · ')}</div>` : ''}
+   ${L?.items?.length ? `<div class="small muted">${L.items.filter(i => i.producto_id != null).length} productos de inventario y ${L.items.filter(i => i.producto_id == null).length} artículos del menú leídos de la cinta.</div>` : ''}
+   ${fotos.length ? `<div class="thumbs big" id="cfotos">${fotos.map(() => '<div class="th"><span class="muted small">Cargando foto…</span></div>').join('')}</div>` : '<div class="note">Este cierre se registró sin foto de la cinta.</div>'}`;
+  S.modal = { tipo: 'info', titulo: 'Cierre del día', html: body() }; renderModal();
+  if (fotos.length) {
+    const urls = await Promise.all(fotos.map(p => sb.storage.from('cintas').createSignedUrl(p, 600).then(r => r.data?.signedUrl).catch(() => null)));
+    const box = $('cfotos'); if (box) box.innerHTML = urls.map((u, i) => u ? `<a class="th" href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="Foto ${i + 1} de la cinta"></a>` : '<div class="th"><span class="muted small">No se pudo cargar</span></div>').join('');
+  }
+}
 function renderModal() {
   const m = S.modal; const el = $('modal'); if (!m) { el.innerHTML = ''; return; }
+  if (m.tipo === 'info') { el.innerHTML = `<div class="overlay" data-act="mCancelBg"><div class="modal wide" role="dialog" aria-modal="true" aria-label="${h(m.titulo)}"><div class="row" style="justify-content:space-between"><h2>${h(m.titulo)}</h2><button class="btn" data-act="mCancel">Cerrar</button></div>${m.html}</div></div>`; return; }
   if (m.tipo === 'confirm') { el.innerHTML = `<div class="overlay" data-act="mCancelBg"><div class="modal" role="dialog" aria-modal="true" aria-label="${h(m.titulo)}"><h2>${h(m.titulo)}</h2><p class="muted" style="margin:0">${m.texto}</p>${m.err ? `<div class="err">${h(m.err)}</div>` : ''}<div class="row" style="justify-content:flex-end"><button class="btn" data-act="mCancel">Cancelar</button><button class="btn ${m.peligro ? 'danger' : 'primary'}" data-act="mOk" ${m.busy ? 'disabled' : ''}>${m.busy ? 'Guardando…' : h(m.okLabel)}</button></div></div></div>`; return; }
   el.innerHTML = `<div class="overlay" data-act="mCancelBg"><div class="modal" role="dialog" aria-modal="true" aria-label="${h(m.titulo)}"><h2>${h(m.titulo)}</h2>
    <div class="field"><label>¿Quién es?</label><div class="users">${S.t.personal.map(u => `<button data-act="fUser" data-v="${h(u)}" aria-pressed="${m.user === u}">${h(u)}</button>`).join('') || '<span class="muted">No hay personal cargado. Conéctese a internet una vez.</span>'}</div></div>
@@ -743,12 +817,17 @@ document.addEventListener('click', async ev => {
           S.t.envios = S.t.envios.filter(x => x.id !== e.id); store.set('envios', S.t.envios); S.t.scan = null; S.t.view = 'home';
         }); return; }
       case 'cdcat': S.t.cd.cat = v; break;
+      case 'fotoDel': S.t.cd.fotosLocal.splice(+v, 1); break;
+      case 'leerCinta': await leerCinta(); return;
+      case 'cintaOtra': { const cd = S.t.cd; for (const pid of Object.keys(cd.auto || {})) delete cd.vend[pid]; cd.lectura = null; cd.auto = {}; cd.fotos = []; cd.cintaErr = ''; break; }
+      case 'verCierre': await verCierre(v); return;
       case 'cdConfirm': S.t.cd.confirm = true; break;
       case 'cdBack': S.t.cd.confirm = false; break;
       case 'approveCd': { const cd = S.t.cd;
         pedirFirma('Cerrar el día', async m => {
           const item = { tipo: 'cd', rpc: 'cerrar_dia', args: { p_client: cd.client, p_fecha: hoy(), p_firma: m.user, p_pin: m.pin, p_cinta: +cd.cinta || 0, p_en: new Date().toISOString(),
             p_items: S.t.prods.map(p => ({ producto_id: p.id, vendidos: +cd.vend[p.id] || 0, quedan: +cd.quedan[p.id] || 0 })) }, local: { firmado_por: m.user, cerrado_en: new Date().toISOString() } };
+          if (cd.fotos?.length) { item.args.p_foto = cd.fotos[0]; item.args.p_lectura = { ...(cd.lectura || {}), fotos: cd.fotos }; }
           try { await ejecutar(item); S.t.cerrado = item.local; toast('Día cerrado. Oficina central ya lo ve.'); }
           catch (err) { if (!esRed(err)) throw err; encolar(item); S.t.online = false; toast('Sin internet: el cierre quedó guardado en la tablet y se enviará solo.'); }
           S.t.cd = null; S.t.view = 'home';
@@ -768,6 +847,12 @@ function despues(k) {
 }
 document.addEventListener('input', ev => { const k = ev.target.dataset.key; if (!k || k === 'planAdd') return; let v = ev.target.value; if (ev.target.inputMode === 'numeric') { v = v.replace(/\D/g, ''); ev.target.value = v; } setKey(k, v); if (k !== 'pk.n' && !k.startsWith('visit.counts') && !k.startsWith('plan.')) despues(k); });
 document.addEventListener('change', async ev => {
+  if (ev.target.id === 'fcam' || ev.target.id === 'fgal') {
+    const files = [...(ev.target.files || [])]; ev.target.value = ''; if (!files.length) return;
+    const cd = S.t.cd; cd.fotosLocal ||= [];
+    for (const f of files.slice(0, 6 - cd.fotosLocal.length)) { try { cd.fotosLocal.push(await comprimir(f)); } catch { toast('No se pudo abrir una de las fotos.'); } }
+    render(); return;
+  }
   const pr = ev.target.dataset.prod;
   if (pr) { const p = S.P[pr];
     try {
