@@ -681,7 +681,7 @@ function tCierre() {
     const resultados = cd.buscar ? prods.filter(p => norm(p.nombre).includes(norm(cd.buscar))) : null;
     if (cd.lista || resultados) {
       const lista = resultados || prods;
-      return top + prog + busc + `<div>${lista.map(p => `<button class="cd-item ${contado(cd, p.id) ? 'done' : ''}" data-act="cdIr" data-v="${p.id}">${thumb(p)}<span class="nm">${h(p.nombre)}</span><span class="vals">${cd.vend[p.id] ? `<span class="muted small">Vendió ${cd.vend[p.id]}</span>` : ''}<b>${contado(cd, p.id) ? 'Quedan ' + cd.quedan[p.id] : 'Sin contar'}</b></span></button>`).join('') || '<div class="note">No hay productos con ese nombre.</div>'}</div>
+      return top + prog + busc + `<div class="note" style="font-size:15px">${resultados ? "Toque el producto para contarlo." : "Esta es la lista de todo. Toque un producto para contarlo, o use <b>Uno por uno</b> para ir en orden con el teclado."}</div><div>${lista.map(p => `<button class="cd-item ${contado(cd, p.id) ? 'done' : ''}" data-act="cdIr" data-v="${p.id}">${thumb(p)}<span class="nm">${h(p.nombre)}</span><span class="vals">${cd.vend[p.id] ? `<span class="muted small">Vendió ${cd.vend[p.id]}</span>` : ''}<b>${contado(cd, p.id) ? 'Quedan ' + cd.quedan[p.id] : 'Sin contar'}</b></span></button>`).join('') || '<div class="note">No hay productos con ese nombre.</div>'}</div>
        <div class="sticky-foot"><button class="tbtn primary" data-act="cdPaso" data-v="3" style="margin-left:auto">Revisar y firmar →</button></div>`;
     }
     cd.i = Math.max(0, Math.min(cd.i, prods.length - 1)); const p = prods[cd.i]; if (!p) return top + '<div class="note">No hay productos cargados. Conéctese a internet una vez.</div>';
