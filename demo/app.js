@@ -76,7 +76,7 @@ const S = {
   sem: { lunes: null, suc: 'merliot', modo: 'resumen', rows: null, cargando: false },
   ing: { prov: null, qty: {}, cat: 'beb' }, pk: { pid: null, n: 1, last: [] }, env: { suc: 'soho', codes: [], scan: '' },
   planEdit: null, visit: null, newItem: '', np: { name: '', cat: 'beb', cost: '', pack: '' }, pf: 'todos',
-  login: { who: null, pin: '', err: '', suc: null, code: '', busy: false },
+  login: { user: '', err: '', busy: false },
   t: { view: 'home', envios: [], personal: [], prods: [], cerrado: null, scan: null, cd: null, online: navigator.onLine, queue: store.get('queue', []), syncing: false, msg: '' },
 };
 const isOwner = () => S.perfil?.rol === 'duena';
@@ -102,22 +102,19 @@ async function entrar(userId) {
   S.mode = 'office'; S.view = perfil.rol === 'duena' ? 'resumen' : (VIEW_INICIAL[perfil.enfoque] || 'ingreso');
   render(); await cargarOficina(); suscribir();
 }
-async function salir() { pararCam(); await sb.removeAllChannels(); await sb.auth.signOut(); S.perfil = null; S.mode = 'login'; S.login = { who: null, pin: '', err: '', suc: null, code: '', busy: false }; render(); }
+async function salir() { pararCam(); await sb.removeAllChannels(); await sb.auth.signOut(); S.perfil = null; S.mode = 'login'; S.login = { user: '', err: '', busy: false }; render(); }
 
-async function loginPin() {
-  const t = TEAM.find(x => x.id === S.login.who); S.login.busy = true; renderLoginPad();
-  const { data, error } = await sb.auth.signInWithPassword({ email: t.email, password: S.login.pin });
-  S.login.busy = false; S.login.pin = '';
-  if (error) { S.login.err = /invalid/i.test(error.message) ? 'PIN incorrecto. Intente de nuevo.' : errMsg(error); return render(); }
-  S.login.err = ''; await entrar(data.user.id);
-}
-async function loginTablet() {
-  const suc = S.login.suc, code = (S.login.code || '').trim(); if (!suc || !code) return;
-  S.login.busy = true; render();
-  const { data, error } = await sb.auth.signInWithPassword({ email: `tablet.${suc}@example.com`, password: code });
+// Usuario: correo completo, o solo el nombre de usuario de la demo (ej. "rebeca", "tablet.merliot")
+const aCorreo = u => { u = u.trim().toLowerCase(); return u.includes('@') ? u : u + '@example.com'; };
+async function login() {
+  const user = ($('luser')?.value || '').trim(), pass = $('lpass')?.value || '';
+  S.login.user = user;
+  if (!user || !pass) { S.login.err = 'Escriba su usuario y su contraseña.'; return render(); }
+  S.login.busy = true; S.login.err = ''; render();
+  const { data, error } = await sb.auth.signInWithPassword({ email: aCorreo(user), password: pass });
   S.login.busy = false;
-  if (error) { S.login.err = /invalid/i.test(error.message) ? 'Código de tablet incorrecto.' : errMsg(error); return render(); }
-  S.login.err = ''; S.login.code = ''; await entrar(data.user.id);
+  if (error) { S.login.err = /invalid/i.test(error.message) ? 'Usuario o contraseña incorrectos.' : errMsg(error); render(); $('lpass')?.focus(); return; }
+  S.login.err = ''; await entrar(data.user.id);
 }
 
 /* =================== carga de datos (oficina) =================== */
@@ -463,20 +460,21 @@ function office() {
 
 /* =================== entrada =================== */
 function vLogin() {
-  const L = S.login; const t = TEAM.find(x => x.id === L.who);
-  return `<div class="login"><div class="login-in"><span class="eyebrow">Operación · ${fechaLarga()}</span><h1>¿Quién entra?</h1>
-  <div class="who-grid">${TEAM.map(x => `<button class="who-card" data-act="lwho" data-v="${x.id}" aria-pressed="${L.who === x.id}"><em>${x.tag}</em><b>${x.name}</b><span>${x.desc}</span></button>`).join('')}
-  <button class="who-card" data-act="lwho" data-v="sucursal" aria-pressed="${L.who === 'sucursal'}"><em>Tablet</em><b>Sucursal</b><span>Configurar esta tablet para una sucursal.</span></button></div>
-  ${L.who === 'sucursal' ? `<div class="stack" style="align-items:center;width:100%;max-width:520px"><span class="field"><label>¿Qué sucursal es esta tablet?</label></span>
-    <div class="chips" style="justify-content:center">${['merliot', 'tog', 'soho', 'cascadas', 'tigo', 'emblema', 'kinetika'].map((s, i) => `<button class="chip" data-act="lsuc" data-v="${s}" aria-pressed="${L.suc === s}">${['Merliot', 'TOG', 'Soho', 'Cascadas', 'Tigo', 'Emblema', 'Kinetika'][i]}</button>`).join('')}</div>
-    ${L.suc ? `<div class="field" style="width:100%"><label for="tcode">Código de la tablet</label><input id="tcode" data-key="login.code" type="password" autocomplete="off" value="" placeholder="Lo encuentra en Supabase → demo_accesos"></div><button class="btn primary" data-act="lgoSuc" ${L.busy ? 'disabled' : ''}>${L.busy ? 'Entrando…' : 'Configurar tablet'}</button>` : ''}</div>` : ''}
-  ${t ? `<div class="stack" style="align-items:center" id="pinbox">${pinPad('lpin', 6, L.pin.length, `PIN de ${h(t.name)}`, L.busy)}</div>` : ''}
-  ${L.err ? `<div class="err">${h(L.err)}</div>` : ''}
-  <p class="hint">Demo con datos simulados. Los PIN están en Supabase → Table Editor → demo_accesos.</p></div></div>`;
+  const L = S.login;
+  return `<div class="auth"><form class="auth-card" id="loginform" novalidate>
+   <div class="auth-logo">${LOGO}</div>
+   <div class="auth-head"><h1>Iniciar sesión</h1><p>Operación de sucursales y bodega</p></div>
+   <div class="field"><label for="luser">Usuario</label><input id="luser" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" value="${h(L.user || '')}" placeholder="Ej. rebeca o tablet.merliot" ${L.busy ? 'disabled' : ''}></div>
+   <div class="field"><label for="lpass">Contraseña</label><div class="pass-wrap"><input id="lpass" name="password" type="password" autocomplete="current-password" ${L.busy ? 'disabled' : ''}><button type="button" class="pass-eye" data-act="lshow" aria-label="Mostrar u ocultar contraseña">Ver</button></div></div>
+   ${L.err ? `<div class="err" role="alert">${h(L.err)}</div>` : ''}
+   <button type="submit" class="btn primary auth-btn" ${L.busy ? 'disabled' : ''}>${L.busy ? 'Entrando…' : 'Entrar'}</button>
+   <p class="auth-note">Las tablets de sucursal entran con su propio usuario y se quedan con la sesión abierta. Si olvidó su contraseña, pídala a la dueña.</p>
+  </form>
+  <p class="hint">Demo con datos simulados · Usuarios y contraseñas en Supabase → Table Editor → demo_accesos</p></div>`;
 }
 const pinPad = (act, len, filled, label, busy) => `<span class="field"><label>${label}</label></span><div class="dots">${Array.from({ length: len }, (_, i) => `<i class="${i < filled ? 'on' : ''}"></i>`).join('')}</div>
  <div class="pad">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-act="${act}" data-v="${d}" ${busy ? 'disabled' : ''}>${d}</button>`).join('')}<span></span><button data-act="${act}" data-v="0" ${busy ? 'disabled' : ''}>0</button><button data-act="${act}Del" style="font-size:14px">Borrar</button></div>${busy ? '<span class="muted">Verificando…</span>' : ''}`;
-function renderLoginPad() { const box = $('pinbox'); const t = TEAM.find(x => x.id === S.login.who); if (box && t) box.innerHTML = pinPad('lpin', 6, S.login.pin.length, `PIN de ${h(t.name)}`, S.login.busy); }
+document.addEventListener('submit', ev => { if (ev.target.id === 'loginform') { ev.preventDefault(); login(); } });
 
 /* =================== TABLET =================== */
 async function cargarTablet() {
@@ -644,7 +642,7 @@ function render() {
   if (S.mode !== 'tablet' || S.t.view !== 'scan') pararCam();
   const app = $('app');
   if (S.mode === 'boot') app.innerHTML = '<div class="boot">Cargando…</div>';
-  else if (S.mode === 'login') app.innerHTML = `<header class="top"><div class="top-in"><span class="brand">${LOGO}<span class="sep"></span><span class="app">Operación</span></span><span class="proto">Demo</span></div></header>${vLogin()}`;
+  else if (S.mode === 'login') { app.innerHTML = vLogin(); if (!S.login.busy) ($('luser').value ? $('lpass') : $('luser')).focus(); }
   else if (S.mode === 'office') app.innerHTML = office();
   else app.innerHTML = tablet();
   if (window.JsBarcode) document.querySelectorAll('#app svg[data-code]').forEach(s => { try { JsBarcode(s, s.dataset.code, { format: 'CODE128', displayValue: false, margin: 0, height: 60, width: 2, background: '#ffffff', lineColor: '#111111' }); } catch { } });
@@ -660,13 +658,9 @@ document.addEventListener('click', async ev => {
   try {
     switch (a) {
       /* entrada */
-      case 'lwho': S.login.who = v; S.login.pin = ''; S.login.err = ''; break;
-      case 'lsuc': S.login.suc = v; S.login.err = ''; render(); $('tcode')?.focus(); return;
-      case 'lgoSuc': S.login.code = $('tcode')?.value || ''; await loginTablet(); return;
-      case 'lpin': if (S.login.busy) return; S.login.pin += v; if (S.login.pin.length >= 6) { await loginPin(); return; } renderLoginPad(); return;
-      case 'lpinDel': S.login.pin = S.login.pin.slice(0, -1); renderLoginPad(); return;
+      case 'lshow': { const i = $('lpass'); i.type = i.type === 'password' ? 'text' : 'password'; b.textContent = i.type === 'password' ? 'Ver' : 'Ocultar'; return; }
       case 'logout': await salir(); return;
-      case 'logoutTablet': confirmar('Salir de la tablet', 'Para volver a entrar necesitará el código de la tablet. Los registros pendientes de enviar se conservan.', 'Salir', async () => { await salir(); return false; }); return;
+      case 'logoutTablet': confirmar('Cerrar sesión de la tablet', 'Para volver a entrar necesitará el usuario y la contraseña de la tablet. Los registros pendientes de enviar se conservan.', 'Cerrar sesión', async () => { await salir(); return false; }); return;
       /* oficina: navegación */
       case 'view': S.view = v; S.modal = null; window.scrollTo(0, 0); if (v === 'semana') { S.sem.rows = null; } break;
       case 'inc': case 'dec': { const k = b.dataset.key; let x = +(getKey(k) || 0) + (a === 'inc' ? 1 : -1); if (x < 0) x = 0; setKey(k, String(x)); b.parentNode.querySelector('input').value = x; despues(k); return; }
@@ -794,12 +788,6 @@ document.addEventListener('keydown', ev => {
   if (id === 'envscan') { ev.preventDefault(); document.querySelector('[data-act="envScan"]')?.click(); }
   if (id === 'mancode') document.querySelector('[data-act="manScan"]')?.click();
   if (id === 'newitem') document.querySelector('[data-act="ckAdd"]')?.click();
-  if (id === 'tcode') document.querySelector('[data-act="lgoSuc"]')?.click();
-});
-// teclado físico para PIN en la entrada
-document.addEventListener('keydown', ev => {
-  if (S.mode === 'login' && S.login.who && S.login.who !== 'sucursal' && /^\d$/.test(ev.key) && !/INPUT/.test(document.activeElement?.tagName)) document.querySelector(`[data-act="lpin"][data-v="${ev.key}"]`)?.click();
-  if (S.mode === 'login' && ev.key === 'Backspace' && S.login.who && S.login.who !== 'sucursal' && !/INPUT/.test(document.activeElement?.tagName)) document.querySelector('[data-act="lpinDel"]')?.click();
 });
 setInterval(() => { if (S.mode === 'tablet' && navigator.onLine && S.t.queue.length) flushQueue(); }, 30000);
 
