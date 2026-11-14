@@ -38,6 +38,11 @@ details summary{cursor:pointer;color:var(--muted)}
 .ped input.receta{margin-top:4px;width:100%;max-width:180px;height:28px;font-size:12px;padding:3px 8px}
 .ped tfoot td{background:#FAFBF9}
 
+/* Detalle del cierre */
+.det-kpis{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+.det-kpis .kpi b{font-size:26px}
+@media (max-width:640px){.det-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
+
 /* Despacho de hoy */
 .desp-card{border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .desp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}

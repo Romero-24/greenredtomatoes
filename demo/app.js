@@ -815,10 +815,34 @@ async function flushQueue() {
 /* ---------- PIN de firma en la tablet ---------- */
 function pedirFirma(titulo, accion) { S.modal = { tipo: 'firma', titulo, user: S.t.personal[0], pin: '', err: '', busy: false, accion }; renderModal(); }
 function confirmar(titulo, texto, okLabel, accion, peligro) { S.modal = { tipo: 'confirm', titulo, texto, okLabel, accion, peligro, err: '', busy: false }; renderModal(); }
+/* Detalle de un cierre: tenía + entró − vendió = debía quedar, contra lo contado */
+function detalleCierreHTML(det) {
+  const own = isOwner(); const primero = det.some(r => r.primer_cierre);
+  const c$ = pid => S.costos[pid] || 0;
+  const conDatos = det.filter(r => r.tenia || r.entro || r.vendio || r.contado);
+  const t = { vend: sum(conDatos.map(r => r.vendio)), quedan: sum(conDatos.map(r => r.contado)), valor: sum(conDatos.map(r => r.contado * c$(r.producto_id))), fu: 0, su: 0, fv: 0, sv: 0 };
+  conDatos.forEach(r => { if (r.esperado == null) return; const d = r.contado - r.esperado; if (d < 0) { t.fu += d; t.fv += d * c$(r.producto_id); } else if (d > 0) { t.su += d; t.sv += d * c$(r.producto_id); } });
+  return `<div class="stack" style="gap:10px">
+   ${primero ? '<div class="flash warn small"><b>Inventario inicial:</b> es el primer cierre de esta sucursal, así que todavía no hay con qué comparar. Desde el próximo cierre se ven las diferencias.</div>' : ''}
+   <div class="kpis det-kpis"><div class="kpi"><span class="muted">Vendió</span><b class="num">${t.vend}</b><span class="muted">unidades</span></div><div class="kpi"><span class="muted">Quedó</span><b class="num">${t.quedan}</b><span class="muted">unidades${own ? ' · ' + money(t.valor) : ''}</span></div>
+    ${primero ? '' : `<div class="kpi ${t.fu < 0 ? 'bad' : ''}"><span class="muted">Faltante</span><b class="num">${t.fu}</b><span class="muted">${own ? money(t.fv) : 'unidades'}</span></div><div class="kpi"><span class="muted">Sobrante</span><b class="num" style="color:var(--olive)">+${t.su}</b><span class="muted">${own ? moneyS(t.sv) : 'unidades'}</span></div>`}</div>
+   <input id="detbuscar" data-buscar="cdet" placeholder="Buscar producto…" autocomplete="off">
+   <div class="tbl-wrap" style="max-height:42vh;overflow:auto" id="det-tabla">${detalleFilas(conDatos, '')}</div></div>`;
+}
+function detalleFilas(rows, buscar) {
+  const own = isOwner(); const primero = rows.some(r => r.primer_cierre);
+  const lista = rows.filter(r => !buscar || norm(S.P[r.producto_id]?.nombre).includes(norm(buscar)))
+    .sort((a, b) => ((a.esperado == null ? 0 : a.contado - a.esperado) - (b.esperado == null ? 0 : b.contado - b.esperado)) || a.producto_id - b.producto_id);
+  return `<table><thead><tr><th>Producto</th>${primero ? '' : '<th class="r">Tenía</th><th class="r">Entró</th>'}<th class="r">Vendió</th>${primero ? '' : '<th class="r">Debía quedar</th>'}<th class="r">Contaron</th>${primero ? (own ? '<th class="r">Valor</th>' : '') : `<th class="r">Dif.</th>${own ? '<th class="r">Dif. $</th>' : ''}`}</tr></thead><tbody>
+   ${lista.map(r => { const d = r.esperado == null ? 0 : r.contado - r.esperado; const cls = d < 0 ? 'neg' : d > 0 ? 'pos' : ''; const c = S.costos[r.producto_id] || 0;
+     return `<tr><td>${h(S.P[r.producto_id]?.nombre || 'Producto ' + r.producto_id)}</td>${primero ? '' : `<td class="r">${r.tenia}</td><td class="r">${r.entro || '<span class="muted">0</span>'}</td>`}<td class="r">${r.vendio || '<span class="muted">0</span>'}</td>${primero ? '' : `<td class="r">${r.esperado}</td>`}<td class="r"><b>${r.contado}</b></td>${primero ? (own ? `<td class="r">${money(r.contado * c)}</td>` : '') : `<td class="r ${cls}">${d ? (d > 0 ? '+' : '') + d : '<span class="muted">0</span>'}</td>${own ? `<td class="r ${cls}">${d ? moneyS(d * c) : '<span class="muted">—</span>'}</td>` : ''}`}</tr>`; }).join('') || '<tr><td colspan="8" class="muted">Sin productos.</td></tr>'}
+  </tbody></table>`;
+}
 async function verCierre(id) {
   let c = S.cierres.find(x => x.id === +id) || (S.sem.cierres || []).find(x => x.id === +id);
   if (!c || !('cinta_lectura' in c)) { try { c = await q(sb.from('cierres').select('*').eq('id', +id).single()); } catch (e) { toast('No se pudo abrir el cierre: ' + h(errMsg(e))); return; } }
   let corrs = []; try { corrs = await q(sb.from('correcciones').select('por,en,motivo').eq('cierre_id', c.id).order('en')); } catch { }
+  let det = null; try { det = await q(sb.rpc('detalle_cierre', { p_cierre: c.id })); } catch { }
   const L = c.cinta_lectura || null; const fotos = L?.fotos || (c.foto_cinta ? [c.foto_cinta] : []);
   const body = () => `<p class="muted" style="margin:0">${h(sucNombre(c.sucursal_id))} · ${fFecha(c.fecha)} · firmó ${h(c.firmado_por)} a las ${fHora(c.cerrado_en)}</p>
    <div class="row" style="gap:18px"><span>Total registrado: <b>$${(+c.cinta_total || 0).toFixed(2)}</b></span>${L?.total != null && Math.abs(+L.total - +c.cinta_total) > 0.009 ? `<span class="neg">La cinta leída dice $${(+L.total).toFixed(2)}</span>` : ''}</div>
@@ -827,8 +851,9 @@ async function verCierre(id) {
    ${L?.items?.length ? `<div class="small muted">${L.items.filter(i => i.producto_id != null).length} productos de inventario y ${L.items.filter(i => i.producto_id == null).length} artículos del menú leídos de la cinta.</div>` : ''}
    ${corrs.length ? `<div class="flash warn small">Corregido: ${corrs.map(x => h(x.por) + ' · ' + fCuando(x.en) + (x.motivo ? ' · ' + h(x.motivo) : '')).join('<br>')}</div>` : ''}
    ${isOwner() ? `<div><button class="btn primary" data-act="ccAbrir" data-v="${c.id}">Corregir este cierre</button></div>` : ''}
+   ${det ? detalleCierreHTML(det) : '<div class="note small">Para ver el detalle por producto, corra el SQL 11 en Supabase.</div>'}
    ${fotos.length ? `<div class="thumbs big" id="cfotos">${fotos.map(() => '<div class="th"><span class="muted small">Cargando foto…</span></div>').join('')}</div>` : '<div class="note">Este cierre se registró sin foto de la cinta.</div>'}`;
-  S.modal = { tipo: 'info', titulo: 'Cierre del día', html: body() }; renderModal();
+  S.modal = { tipo: 'info', titulo: 'Cierre del día', html: body(), det }; renderModal();
   if (fotos.length) {
     const urls = await Promise.all(fotos.map(p => sb.storage.from('cintas').createSignedUrl(p, 600).then(r => r.data?.signedUrl).catch(() => null)));
     const box = $('cfotos'); if (box) box.innerHTML = urls.map((u, i) => u ? `<a class="th" href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="Foto ${i + 1} de la cinta"></a>` : '<div class="th"><span class="muted small">No se pudo cargar</span></div>').join('');
@@ -1080,6 +1105,7 @@ function despues(k) {
 document.addEventListener('input', ev => {
   if (ev.target.dataset.buscar) {
     const t = ev.target.dataset.buscar, v = ev.target.value, id = ev.target.id, pos = ev.target.selectionStart;
+    if (t === 'cdet') { const box = $('det-tabla'); if (box && S.modal?.det) box.innerHTML = detalleFilas(S.modal.det.filter(r => r.tenia || r.entro || r.vendio || r.contado), v); return; }
     if (t === 'cd') S.t.cd.buscar = v; else if (t === 'ing') S.ing.buscar = v; else if (t === 'dist') S.dist.buscar = v; else if (t === 'prod') S.pbuscar = v;
     else if (t === 'cc') { S.modal.buscar = v; renderModal(); } if (t !== 'cc') render();
     const el = $(id); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch { } } return;
