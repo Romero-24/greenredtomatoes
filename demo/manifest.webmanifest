@@ -1,0 +1,9 @@
+{
+  "name": "Green & Red Operación",
+  "short_name": "G&R Operación",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1D3A27",
+  "lang": "es"
+}
