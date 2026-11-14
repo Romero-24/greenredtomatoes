@@ -210,7 +210,8 @@ async function cargarNetoPrev() {
 async function cargarSemana() {
   if (!S.sem.lunes) S.sem.lunes = addDays(lunesDe(hoy()), -7);
   S.sem.cargando = true; S.sem.rows = null; render();
-  try { S.sem.rows = (await q(sb.rpc('reporte_semana', { p_lunes: S.sem.lunes, p_sucursal: S.sem.suc }))).map(filaSemana); }
+  try { S.sem.rows = (await q(sb.rpc('reporte_semana', { p_lunes: S.sem.lunes, p_sucursal: S.sem.suc }))).map(filaSemana);
+    S.sem.cierres = await q(sb.from('cierres').select('*').eq('sucursal_id', S.sem.suc).gte('fecha', S.sem.lunes).lte('fecha', addDays(S.sem.lunes, 6)).order('fecha')).catch(() => []); }
   catch (e) { toast('No se pudo cargar la semana: ' + h(errMsg(e))); S.sem.rows = []; }
   S.sem.cargando = false; render();
 }
@@ -256,11 +257,12 @@ function vResumen() {
 }
 
 function vIngreso() {
-  const list = activos().filter(p => p.categoria_id === S.ing.cat);
+  const list = S.ing.buscar ? activos().filter(p => norm(p.nombre).includes(norm(S.ing.buscar))) : activos().filter(p => p.categoria_id === S.ing.cat);
   const tot = sum(Object.values(S.ing.qty)), cnt = Object.values(S.ing.qty).filter(v => +v > 0).length;
   return head('Bodega central · Inventario', 'Ingreso de proveedor', 'Cuente lo que llegó y anótelo. Al cerrar, queda registrado quién lo contó y a qué hora, y el inventario de bodega se actualiza.') + `
   <section class="panel stack">
    <div class="row"><div class="field" style="min-width:260px"><label for="prov">Proveedor</label><select id="prov" data-key="ing.prov">${S.provs.map(p => `<option value="${p.id}"${+S.ing.prov === p.id ? ' selected' : ''}>${h(p.nombre)}</option>`).join('')}</select></div>
+   <div class="field" style="flex:1;min-width:200px"><label for="ingbuscar">Buscar</label><input id="ingbuscar" data-buscar="ing" value="${h(S.ing.buscar || '')}" placeholder="Escriba parte del nombre…" autocomplete="off"></div>
    <div class="chips" style="margin-left:auto">${S.cats.map(c => `<button class="chip" data-act="ingcat" data-v="${c.id}" aria-pressed="${S.ing.cat === c.id}">${h(c.nombre)}</button>`).join('')}</div></div>
    <div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Sueltas en bodega</th><th class="r">Unidades que llegaron</th></tr></thead><tbody>
    ${list.map(p => `<tr><td>${prodCell(p, isOwner() ? (S.costos[p.id] == null ? '<span style="color:var(--mustard)">Sin costo registrado</span>' : 'Costo ' + money(S.costos[p.id])) : '')}</td><td class="r num">${S.stock[p.id]?.sueltas ?? 0}</td><td class="r">${stepper('ing.qty.' + p.id, S.ing.qty[p.id])}</td></tr>`).join('')}
@@ -312,7 +314,7 @@ function vDistrib() {
 }
 function vPedido() {
   const own = isOwner(); const F = S.dist.fecha; const cat = S.dist.cat;
-  const prods = activos().filter(p => cat === 'todas' || p.categoria_id === cat);
+  const prods = S.dist.buscar ? activos().filter(p => norm(p.nombre).includes(norm(S.dist.buscar))) : activos().filter(p => cat === 'todas' || p.categoria_id === cat);
   const cats = [['coc', 'Cocina'], ...S.cats.filter(c => c.id !== 'coc').map(c => [c.id, c.nombre]), ['todas', 'Todo']];
   const rows = prods.map(p => {
     const cells = S.suc.map(s => { const v = S.pedidos[F]?.[s.id]?.[p.id]; const r = R(s.id, p.id);
@@ -327,6 +329,7 @@ function vPedido() {
     <div class="row"><div class="seg2">${[[hoy(), 'Hoy · ' + fFecha(hoy())], [manana(), 'Mañana · ' + fFecha(manana())]].map(([f, l]) => `<button data-act="dfecha" data-v="${f}" aria-pressed="${F === f}">${l}</button>`).join('')}</div></div>
     <div class="row">${own ? '<button class="btn" data-act="llenarBase">Llenar con pedido base</button>' : '<span class="muted small">Lo decide la dueña</span>'}<button class="btn" data-act="hojaCocina">Imprimir hoja de cocina</button></div>
    </div>
+   <div class="row"><input id="distbuscar" data-buscar="dist" value="${h(S.dist.buscar || '')}" placeholder="Buscar producto…" autocomplete="off" style="flex:1;min-width:180px;max-width:320px"></div>
    <div class="chips">${cats.map(([k, l]) => `<button class="chip" data-act="dcat" data-v="${k}" aria-pressed="${cat === k}">${h(l)}</button>`).join('')}</div>
    <p class="muted small" style="margin:0"><b>R</b> = lo que le quedó a la sucursal en su último cierre (más lo recibido después). Escriba cuánto enviar; a la derecha sale el total con que va a quedar. Se guarda solo.</p>
    <div class="tbl-wrap xl ped"><table><thead><tr><th class="stick">Producto</th>${S.suc.map(s => `<th class="r">${h(s.nombre)}<br><span class="muted small">${S.ultCierre[s.id] ? 'cierre ' + fFecha(S.ultCierre[s.id]) : 'sin cierre'}${despachado(s.id) ? ' · despachado' : ''}</span></th>`).join('')}<th class="r">Total</th></tr></thead>
@@ -453,6 +456,7 @@ function vSemana() {
     `<div class="week-nav"><button class="btn" data-act="semPrev" aria-label="Semana anterior">‹</button><button class="btn" data-act="semNext" aria-label="Semana siguiente" ${actual ? 'disabled' : ''}>›</button></div>`) + `
   <div class="chips">${S.suc.map(s => `<button class="chip" data-act="wsuc" data-v="${s.id}" aria-pressed="${S.sem.suc === s.id}">${h(s.nombre)}</button>`).join('')}</div>
   ${S.sem.cargando ? '<div class="note">Calculando la semana…</div>' : `
+  <div class="row small"><span class="muted">Cierres de la semana:</span>${DAYS.map((d, i) => { const f = addDays(L, i); const c = (S.sem.cierres || []).find(x => x.fecha === f); return c ? `<button class="chip" data-act="verCierre" data-v="${c.id}" title="Ver o corregir">${d} ${new Date(f + 'T12:00:00').getDate()}${c.corregido ? ' · corregido' : ''}${c.foto_cinta ? ' 📷' : ''}</button>` : `<span class="chip" style="opacity:.45">${d} ${new Date(f + 'T12:00:00').getDate()}</span>`; }).join('')}</div>
   ${n < 7 ? `<div class="banner"><span>${n === 0 ? 'Esta semana todavía no tiene cierres.' : `Semana en curso: hay ${n} de 7 cierres. El conteo se compara contra el último cierre.`}</span></div>` : ''}
   <div class="kpis">
    <div class="kpi"><span class="muted">Costo enviado</span><b class="num">${money(tot.cEnv)}</b><span class="muted">inventario inicial ${money(tot.cIni)}</span></div>
@@ -492,7 +496,7 @@ function semCuadro(rows) {
 
 function vProductos() {
   const f = S.pf; const sin = S.prods.filter(p => p.activo && S.costos[p.id] == null).length;
-  const list = S.prods.filter(p => f === 'todos' || (f === 'sincosto' ? S.costos[p.id] == null : p.categoria_id === f));
+  const list = S.prods.filter(p => (f === 'todos' || (f === 'sincosto' ? S.costos[p.id] == null : p.categoria_id === f)) && (!S.pbuscar || norm(p.nombre).includes(norm(S.pbuscar))));
   const catN = id => S.cats.find(c => c.id === id)?.nombre || id;
   const rows = list.map(p => { const lg = S.costLog[p.id]; return `<tr class="${p.activo ? '' : 'off'}"><td>${prodCell(p, h(catN(p.categoria_id)))}</td>
    <td class="r"><span class="money-in">$<input data-prod="${p.id}" data-field="cost" inputmode="decimal" value="${S.costos[p.id] == null ? '' : (+S.costos[p.id]).toFixed(2)}" placeholder="Sin costo" aria-label="Costo de ${h(p.nombre)}"></span>${lg && lg.costo_anterior !== null ? `<br><span class="muted small">${h(lg.cambiado_por)} · ${fCuando(lg.cambiado_en)} · antes ${money(+lg.costo_anterior)}</span>` : ''}</td>
@@ -502,6 +506,7 @@ function vProductos() {
   return head('Catálogo', 'Productos', 'Productos, costos y tamaño de paquete. Reemplaza las columnas de producto y costo del Excel; cada cambio de costo queda registrado.') + `
   ${sin ? `<div class="banner"><span><b>${sin} productos sin costo.</b> No suman en dinero en el cierre semanal hasta que se les ponga precio.</span><button class="btn" data-act="pf" data-v="sincosto">Ver cuáles</button></div>` : ''}
   <div class="chips"><button class="chip" data-act="pf" data-v="todos" aria-pressed="${f === 'todos'}">Todos · ${S.prods.length}</button>${S.cats.map(c => `<button class="chip" data-act="pf" data-v="${c.id}" aria-pressed="${f === c.id}">${h(c.nombre)}</button>`).join('')}<button class="chip" data-act="pf" data-v="sincosto" aria-pressed="${f === 'sincosto'}">Sin costo · ${S.prods.filter(p => S.costos[p.id] == null).length}</button></div>
+  <div class="row"><input id="pbuscar" data-buscar="prod" value="${h(S.pbuscar || '')}" placeholder="Buscar producto…" autocomplete="off" style="flex:1;min-width:180px;max-width:320px"></div>
   <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Costo</th><th class="r">Por paquete</th><th class="r">En bodega</th><th class="r">Estado</th></tr></thead><tbody>${rows || '<tr><td colspan="5" class="muted">No hay productos en este filtro.</td></tr>'}</tbody></table></div></section>
   <section class="panel stack"><h2>Agregar producto</h2>
    <div class="row" style="align-items:flex-end;gap:14px">
@@ -555,7 +560,7 @@ document.addEventListener('submit', ev => { if (ev.target.id === 'loginform') { 
 
 /* =================== TABLET =================== */
 async function cargarTablet() {
-  S.t.prods = store.get('prods', []); S.t.personal = store.get('personal', []); S.t.envios = store.get('envios', []);
+  S.t.prods = store.get('prods', []); S.t.personal = store.get('personal', []); S.t.envios = store.get('envios', []); S.t.ultimo = store.get('ultimo', null);
   render();
   try {
     const [prods, personal, envios, cierre] = await Promise.all([
@@ -581,9 +586,9 @@ function tHome() {
   return `<div><span class="eyebrow">${fechaLarga()}</span><h1>¿Qué va a hacer?</h1></div>
   <div class="big-actions">
    <button class="big" data-act="tview" data-v="recibir"><span class="ico">${ICON.scan}</span><b>Recibir envío</b><span class="muted" style="font-size:16px">Escanee cada paquete que llegó de oficina central.</span>${pend ? `<span class="badge">${pend} por recibir</span>` : ''}</button>
-   <button class="big" data-act="tview" data-v="cierre" ${c ? 'disabled' : ''}><span class="ico">${ICON.cierre}</span><b>Cierre del día</b><span class="muted" style="font-size:16px">${c ? 'Ya cerró hoy: ' + h(c.firmado_por) + ' a las ' + fHora(c.cerrado_en) : 'Anote lo vendido según la cinta y cuente lo que queda.'}</span>${c ? '<span class="badge" style="background:var(--olive)">Hecho</span>' : ''}</button>
+   <button class="big" data-act="${c ? (puedeCorregir() ? 'cdCorregir' : 'nada') : 'tview'}" data-v="cierre" ${c && !puedeCorregir() ? 'disabled' : ''}><span class="ico">${ICON.cierre}</span><b>Cierre del día</b><span class="muted" style="font-size:16px">${c ? 'Ya cerró hoy: ' + h(c.firmado_por) + ' a las ' + fHora(c.cerrado_en) + (puedeCorregir() ? '. Toque para corregir (hasta 15 min después).' : '') : 'Foto de la cinta, contar lo que queda y firmar. 3 pasos.'}</span>${c ? '<span class="badge" style="background:var(--olive)">Hecho</span>' : ''}</button>
   </div>
-  ${S.t.queue.length ? `<div class="panel stack"><h3>Pendientes de enviar a oficina (${S.t.queue.length})</h3><div class="queue-list">${S.t.queue.map(x => `<div>${x.tipo === 'rec' ? 'Recepción ' + h(x.codigo) : 'Cierre del día'} · ${h(x.args.p_firma)} · ${fCuando(x.args.p_en)}${x.error ? ` <span class="bad">· ${h(x.error)}</span>` : ''}</div>`).join('')}</div><div><button class="btn" data-act="sync">Reintentar ahora</button></div></div>` : ''}`;
+  ${S.t.queue.length ? `<div class="panel stack"><h3>Pendientes de enviar a oficina (${S.t.queue.length})</h3><div class="queue-list">${S.t.queue.map(x => `<div>${x.tipo === 'rec' ? 'Recepción ' + h(x.codigo) : x.tipo === 'cc' ? 'Corrección del cierre' : 'Cierre del día'} · ${h(x.args.p_firma)} · ${fCuando(x.args.p_en)}${x.error ? ` <span class="bad">· ${h(x.error)}</span>` : ''}</div>`).join('')}</div><div><button class="btn" data-act="sync">Reintentar ahora</button></div></div>` : ''}`;
 }
 function tRecibir() {
   return `<button class="back" data-act="tview" data-v="home">← Inicio</button><div class="row" style="justify-content:space-between"><h1>Envíos por recibir</h1><button class="btn" data-act="tReload">Actualizar</button></div>
@@ -647,23 +652,73 @@ async function iniciarCam() {
 function pararCam() { if (!CAM) return; clearTimeout(CAM.timer); try { CAM.reader?.reset(); } catch { } CAM.stream.getTracks().forEach(t => t.stop()); CAM = null; }
 const cargarScript = src => new Promise((ok, mal) => { if (document.querySelector(`script[src="${src}"]`)) return ok(); const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = mal; document.head.appendChild(s); });
 
+/* ---------- Cierre del día por pasos: 1 cinta · 2 contar · 3 revisar y firmar ---------- */
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const contado = (cd, pid) => cd.quedan[pid] !== undefined && cd.quedan[pid] !== '';
+function ordenCierre() { const orden = Object.fromEntries(S.cats.map((c, i) => [c.id, i])); return S.t.prods.slice().sort((a, b) => (orden[a.categoria_id] ?? 99) - (orden[b.categoria_id] ?? 99) || a.id - b.id); }
+function nuevoCd() { return { vend: {}, quedan: {}, cinta: '', client: uuid(), paso: 1, i: 0, campo: 'quedan', lista: false, buscar: '' }; }
+const pasosBar = cd => `<div class="pasos">${['Cinta de la caja', 'Contar lo que queda', 'Revisar y firmar'].map((t, i) => `<button class="paso ${cd.paso === i + 1 ? 'on' : ''} ${cd.paso > i + 1 ? 'hecho' : ''}" data-act="cdPaso" data-v="${i + 1}"><b>${cd.paso > i + 1 ? '✓' : i + 1}</b><span>${t}</span></button>`).join('')}</div>`;
 function tCierre() {
-  const cd = S.t.cd; const prods = S.t.prods; const done = prods.filter(p => cd.quedan[p.id] !== undefined && cd.quedan[p.id] !== '').length;
-  const list = prods.filter(p => p.categoria_id === cd.cat);
-  if (cd.confirm) { const vend = sum(Object.values(cd.vend));
-    return `<button class="back" data-act="cdBack">← Volver al conteo</button><h1>Cerrar el día</h1>
-    <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="kpi"><span class="muted">Productos contados</span><b>${done} / ${prods.length}</b></div><div class="kpi"><span class="muted">Unidades vendidas</span><b>${vend}</b></div><div class="kpi"><span class="muted">Total de la cinta</span><b>$${(+cd.cinta || 0).toFixed(2)}</b></div></div>
-    <p class="muted" style="font-size:16px;margin:0">Una vez cerrado ya no se puede cambiar desde la tablet. Si hay un error, avise a oficina central.</p>
-    <div class="row"><button class="tbtn primary" data-act="approveCd">Cerrar con mi PIN</button><button class="tbtn ghost" data-act="cdBack">Volver</button></div>`; }
-  return `<button class="back" data-act="tview" data-v="home">← Inicio</button>
-  <div class="row" style="justify-content:space-between;align-items:flex-end"><div><h1>Cierre del día</h1><p class="muted" style="margin:4px 0 0;font-size:16px">Anote lo vendido según la cinta y <b>cuente físicamente</b> cuánto queda de cada producto.</p></div>
-  <div style="min-width:220px"><div class="row" style="justify-content:space-between"><span class="muted">Contados</span><b id="cdprog">${done} de ${prods.length}</b></div><div class="progress"><i id="cdbar" style="width:${prods.length ? done / prods.length * 100 : 0}%"></i></div></div></div>
-  ${cintaBox(cd)}
-  <div class="chips">${S.cats.map(c => { const ps = prods.filter(p => p.categoria_id === c.id); const d = ps.filter(p => cd.quedan[p.id] !== undefined && cd.quedan[p.id] !== '').length; return `<button class="chip" style="padding:10px 16px;font-size:15px" data-act="cdcat" data-v="${c.id}" aria-pressed="${cd.cat === c.id}">${h(c.nombre)} · ${d}/${ps.length}</button>`; }).join('')}</div>
-  <div>${list.map(p => `<div class="cd-row ${cd.quedan[p.id] !== undefined && cd.quedan[p.id] !== '' ? 'done' : ''}" data-row="${p.id}"><div class="prod">${thumb(p)}<span><b>${h(p.nombre)}</b>${cd.auto?.[p.id] !== undefined ? `<br><span class="auto-tag">De la cinta: ${cd.auto[p.id]}</span>` : ''}</span></div><div><div class="lab">Vendidos (cinta)</div>${stepper('t.cd.vend.' + p.id, cd.vend[p.id], 't-step')}</div><div><div class="lab">Quedan (contados)</div>${stepper('t.cd.quedan.' + p.id, cd.quedan[p.id], 't-step')}</div></div>`).join('')}</div>
-  <div class="sticky-foot"><div class="field"><label for="cinta">Total de la cinta ($)</label><input id="cinta" data-key="t.cd.cinta" inputmode="decimal" value="${h(cd.cinta)}" placeholder="0.00" style="height:52px;font-size:18px;width:160px"></div>
-  <button class="tbtn primary" data-act="cdConfirm" style="margin-left:auto" id="cdgo" ${done === prods.length && prods.length ? '' : 'disabled'}>${done === prods.length ? 'Revisar y cerrar' : `Faltan ${prods.length - done} por contar`}</button></div>`;
+  const cd = S.t.cd; const prods = ordenCierre(); const done = prods.filter(p => contado(cd, p.id)).length;
+  const corr = cd.correccion ? `<div class="flash warn">Está corrigiendo el cierre de hoy. Puede cambiar cualquier número y volver a firmar.</div>` : '';
+  const top = `<button class="back" data-act="tview" data-v="home">← Inicio</button><h1>${cd.correccion ? 'Corregir cierre del día' : 'Cierre del día'}</h1>${corr}${pasosBar(cd)}`;
+
+  if (cd.paso === 1) return top + `
+   <p class="muted" style="font-size:16px;margin:0">Tome foto de la cinta para que se llene sola lo vendido. Si no tiene la cinta, siga al paso 2 y anote todo a mano.</p>
+   ${cintaBox(cd)}
+   <div class="field"><label for="cinta">Total de la cinta ($)</label><input id="cinta" data-key="t.cd.cinta" inputmode="decimal" value="${h(cd.cinta)}" placeholder="0.00" style="height:56px;font-size:22px;width:200px"></div>
+   <div class="sticky-foot"><span class="muted">${cd.lectura ? 'Cinta leída. Ahora cuente lo que queda.' : 'La foto es opcional.'}</span><button class="tbtn primary" data-act="cdPaso" data-v="2" style="margin-left:auto">${cd.lectura ? 'Seguir: contar →' : 'Seguir sin foto →'}</button></div>`;
+
+  if (cd.paso === 2) {
+    const busc = `<div class="row"><input id="cdbuscar" data-buscar="cd" value="${h(cd.buscar)}" placeholder="Buscar producto…" autocomplete="off" style="flex:1;min-width:0;height:48px;font-size:17px"><button class="tbtn ghost" data-act="cdLista">${cd.lista ? 'Uno por uno' : 'Ver lista'}</button></div>`;
+    const prog = `<div><div class="row" style="justify-content:space-between"><span class="muted">Contados</span><b>${done} de ${prods.length}</b></div><div class="progress"><i style="width:${prods.length ? done / prods.length * 100 : 0}%"></i></div></div>`;
+    const resultados = cd.buscar ? prods.filter(p => norm(p.nombre).includes(norm(cd.buscar))) : null;
+    if (cd.lista || resultados) {
+      const lista = resultados || prods;
+      return top + prog + busc + `<div>${lista.map(p => `<button class="cd-item ${contado(cd, p.id) ? 'done' : ''}" data-act="cdIr" data-v="${p.id}">${thumb(p)}<span class="nm">${h(p.nombre)}</span><span class="vals">${cd.vend[p.id] ? `<span class="muted small">Vendió ${cd.vend[p.id]}</span>` : ''}<b>${contado(cd, p.id) ? 'Quedan ' + cd.quedan[p.id] : 'Sin contar'}</b></span></button>`).join('') || '<div class="note">No hay productos con ese nombre.</div>'}</div>
+       <div class="sticky-foot"><button class="tbtn primary" data-act="cdPaso" data-v="3" style="margin-left:auto">Revisar y firmar →</button></div>`;
+    }
+    cd.i = Math.max(0, Math.min(cd.i, prods.length - 1)); const p = prods[cd.i]; if (!p) return top + '<div class="note">No hay productos cargados. Conéctese a internet una vez.</div>';
+    const cat = S.cats.find(c => c.id === p.categoria_id)?.nombre || '';
+    const val = k => cd[k][p.id] ?? '';
+    return top + prog + busc + `
+     <div class="conteo">
+      <div class="conteo-prod"><span class="thumb big c-${p.categoria_id}">${h(initials(p.nombre))}</span><div><span class="eyebrow">${h(cat)} · ${cd.i + 1} de ${prods.length}</span><h2 class="conteo-nombre">${h(p.nombre)}</h2>${cd.auto?.[p.id] !== undefined ? `<span class="auto-tag">Vendidos según la cinta: ${cd.auto[p.id]}</span>` : ''}</div></div>
+      <div class="conteo-campos">
+       <button class="campo ${cd.campo === 'vend' ? 'on' : ''}" data-act="cdCampo" data-v="vend"><span>Vendidos (cinta)</span><b>${val('vend') === '' ? '—' : val('vend')}</b></button>
+       <button class="campo grande ${cd.campo === 'quedan' ? 'on' : ''}" data-act="cdCampo" data-v="quedan"><span>Quedan (cuente)</span><b>${val('quedan') === '' ? '?' : val('quedan')}</b></button>
+      </div>
+      <div class="teclado">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-act="cdTecla" data-v="${d}">${d}</button>`).join('')}<button data-act="cdTecla" data-v="borrar" class="t-sec">Borrar</button><button data-act="cdTecla" data-v="0">0</button><button data-act="cdTecla" data-v="cero" class="t-sec">No hay (0)</button></div>
+      <div class="row conteo-nav"><button class="tbtn ghost" data-act="cdMover" data-v="-1" ${cd.i === 0 ? 'disabled' : ''}>← Anterior</button>
+       ${cd.i < prods.length - 1 ? `<button class="tbtn primary" data-act="cdMover" data-v="1" style="margin-left:auto">Siguiente →</button>` : `<button class="tbtn primary" data-act="cdPaso" data-v="3" style="margin-left:auto">Revisar y firmar →</button>`}</div>
+     </div>`;
+  }
+
+  // paso 3: revisar y firmar
+  const faltan = prods.filter(p => !contado(cd, p.id)); const vend = sum(Object.values(cd.vend));
+  const filas = prods.filter(p => contado(cd, p.id) && (+cd.quedan[p.id] > 0 || +cd.vend[p.id] > 0));
+  return top + `
+   <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="kpi"><span class="muted">Contados</span><b>${done} / ${prods.length}</b></div><div class="kpi"><span class="muted">Unidades vendidas</span><b>${vend}</b></div><div class="kpi"><span class="muted">Total de la cinta</span><b>$${(+cd.cinta || 0).toFixed(2)}</b></div></div>
+   ${faltan.length ? `<div class="err">Faltan ${faltan.length} productos por contar: ${faltan.slice(0, 6).map(p => h(p.nombre)).join(', ')}${faltan.length > 6 ? '…' : ''}</div><div><button class="tbtn primary" data-act="cdIrFalta">Ir a contar los que faltan</button></div>` : ''}
+   ${!cd.cinta ? `<div class="flash warn">No anotó el total de la cinta. <button class="linkbtn" data-act="cdPaso" data-v="1">Agregarlo</button></div>` : ''}
+   <div class="panel" style="padding:12px 16px"><div class="panel-h" style="margin-bottom:6px"><h3>Lo que va a enviar</h3><span class="muted small">Toque un producto para cambiarlo. Los que quedaron en 0 y sin ventas no se muestran.</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Vendidos</th><th class="r">Quedan</th></tr></thead><tbody>${filas.map(p => `<tr data-act="cdIr" data-v="${p.id}" style="cursor:pointer"><td>${h(p.nombre)}</td><td class="r">${cd.vend[p.id] || 0}</td><td class="r"><b>${cd.quedan[p.id]}</b></td></tr>`).join('') || '<tr><td colspan="3" class="muted">Todo quedó en 0.</td></tr>'}</tbody></table></div></div>
+   <p class="muted" style="font-size:15px;margin:0">${cd.correccion ? 'La corrección queda registrada con su nombre.' : 'Después de cerrar tiene 15 minutos para corregir si se equivocó. Luego solo oficina central puede corregirlo.'}</p>
+   <div class="sticky-foot"><button class="tbtn ghost" data-act="cdPaso" data-v="2">← Volver a contar</button><button class="tbtn primary" data-act="approveCd" style="margin-left:auto" ${faltan.length ? 'disabled' : ''}>${cd.correccion ? 'Guardar corrección con mi PIN' : 'Cerrar el día con mi PIN'}</button></div>`;
 }
+function tHecho() {
+  const u = S.t.ultimo; const min = u ? Math.max(0, 15 - Math.floor((Date.now() - new Date(u.cerrado_en)) / 60000)) : 0;
+  return `<div class="hecho"><div class="check">✓</div><h1>¡Día cerrado!</h1><p class="muted" style="font-size:18px;margin:0">Gracias, ${h(u?.firmado_por || '')}. Oficina central ya ${S.t.queue.some(x => x.tipo === 'cd') ? 'lo recibirá cuando vuelva el internet' : 'lo puede ver'}.</p>
+   <div class="row" style="justify-content:center">${min > 0 ? `<button class="tbtn ghost" data-act="cdCorregir">Corregir (quedan ${min} min)</button>` : ''}<button class="tbtn primary" data-act="tview" data-v="home">Volver al inicio</button></div></div>`;
+}
+function puedeCorregir() { const u = S.t.ultimo; return u && u.fecha === hoy() && Date.now() - new Date(u.cerrado_en) < 15 * 60000; }
+function teclaConteo(v) {
+  const cd = S.t.cd; const p = ordenCierre()[cd.i]; if (!p) return; const k = cd.campo; let cur = String(cd[k][p.id] ?? '');
+  if (v === 'borrar') cur = cur.slice(0, -1); else if (v === 'cero') { cd.quedan[p.id] = '0'; cd.campo = 'quedan'; if (cd.i < S.t.prods.length - 1) cd.i++; render(); return; }
+  else cur = (cur === '0' ? '' : cur) + v;
+  if (cur.length > 4) return; cd[k][p.id] = cur; render();
+}
+
 /* ---------- foto de la cinta ---------- */
 function cintaBox(cd) {
   const L = cd.lectura; const fotos = cd.fotosLocal || [];
@@ -721,7 +776,7 @@ async function leerCinta() {
 }
 
 function tablet() {
-  const views = { home: tHome, recibir: tRecibir, scan: tScan, cierre: tCierre };
+  const views = { home: tHome, recibir: tRecibir, scan: tScan, cierre: tCierre, hecho: tHecho };
   return `<header class="top"><div class="top-in"><span class="brand">${LOGO}<span class="sep"></span><span class="app">Operación</span></span><span class="proto">Demo</span><div class="me"><span><b>${h(S.perfil?.nombre || 'Tablet')}</b><br><span class="muted small">Sucursal</span></span><button class="btn" data-act="logoutTablet">Salir</button></div></div></header>
   <div class="tab-stage"><div class="device"><div class="t-top"><span class="who">${h(sucNombre(S.perfil?.sucursal_id) || S.perfil?.nombre)}</span><span class="sub">Tablet de sucursal</span><span class="net ${S.t.online ? '' : 'off'}" id="net"></span></div>
   <div class="t-body">${views[S.t.view]()}</div></div>
@@ -747,13 +802,17 @@ async function flushQueue() {
 function pedirFirma(titulo, accion) { S.modal = { tipo: 'firma', titulo, user: S.t.personal[0], pin: '', err: '', busy: false, accion }; renderModal(); }
 function confirmar(titulo, texto, okLabel, accion, peligro) { S.modal = { tipo: 'confirm', titulo, texto, okLabel, accion, peligro, err: '', busy: false }; renderModal(); }
 async function verCierre(id) {
-  const c = S.cierres.find(x => x.id === +id); if (!c) return;
+  let c = S.cierres.find(x => x.id === +id) || (S.sem.cierres || []).find(x => x.id === +id);
+  if (!c || !('cinta_lectura' in c)) { try { c = await q(sb.from('cierres').select('*').eq('id', +id).single()); } catch (e) { toast('No se pudo abrir el cierre: ' + h(errMsg(e))); return; } }
+  let corrs = []; try { corrs = await q(sb.from('correcciones').select('por,en,motivo').eq('cierre_id', c.id).order('en')); } catch { }
   const L = c.cinta_lectura || null; const fotos = L?.fotos || (c.foto_cinta ? [c.foto_cinta] : []);
   const body = () => `<p class="muted" style="margin:0">${h(sucNombre(c.sucursal_id))} · ${fFecha(c.fecha)} · firmó ${h(c.firmado_por)} a las ${fHora(c.cerrado_en)}</p>
    <div class="row" style="gap:18px"><span>Total registrado: <b>$${(+c.cinta_total || 0).toFixed(2)}</b></span>${L?.total != null && Math.abs(+L.total - +c.cinta_total) > 0.009 ? `<span class="neg">La cinta leída dice $${(+L.total).toFixed(2)}</span>` : ''}</div>
    ${L?.pagos?.length ? `<table><tbody>${L.pagos.map(p => `<tr><td>${h(p.forma)}${p.transacciones != null ? ` <span class="muted small">(${p.transacciones})</span>` : ''}</td><td class="r">${p.monto != null ? money(+p.monto) : '?'}</td></tr>`).join('')}</tbody></table>` : ''}
    ${L?.anulados?.length ? `<div class="small"><b>Anulados:</b> ${L.anulados.map(a => `${h(a.producto)} (${a.cantidad ?? '?'}) ${a.monto != null ? money(+a.monto) : ''}`).join(' · ')}</div>` : ''}
    ${L?.items?.length ? `<div class="small muted">${L.items.filter(i => i.producto_id != null).length} productos de inventario y ${L.items.filter(i => i.producto_id == null).length} artículos del menú leídos de la cinta.</div>` : ''}
+   ${corrs.length ? `<div class="flash warn small">Corregido: ${corrs.map(x => h(x.por) + ' · ' + fCuando(x.en) + (x.motivo ? ' · ' + h(x.motivo) : '')).join('<br>')}</div>` : ''}
+   ${isOwner() ? `<div><button class="btn primary" data-act="ccAbrir" data-v="${c.id}">Corregir este cierre</button></div>` : ''}
    ${fotos.length ? `<div class="thumbs big" id="cfotos">${fotos.map(() => '<div class="th"><span class="muted small">Cargando foto…</span></div>').join('')}</div>` : '<div class="note">Este cierre se registró sin foto de la cinta.</div>'}`;
   S.modal = { tipo: 'info', titulo: 'Cierre del día', html: body() }; renderModal();
   if (fotos.length) {
@@ -761,8 +820,28 @@ async function verCierre(id) {
     const box = $('cfotos'); if (box) box.innerHTML = urls.map((u, i) => u ? `<a class="th" href="${u}" target="_blank" rel="noopener"><img src="${u}" alt="Foto ${i + 1} de la cinta"></a>` : '<div class="th"><span class="muted small">No se pudo cargar</span></div>').join('');
   }
 }
+async function abrirCorreccion(id) {
+  let c; try { c = await q(sb.from('cierres').select('*').eq('id', +id).single()); } catch (e) { toast('No se pudo abrir: ' + h(errMsg(e))); return; }
+  const its = await q(sb.from('cierre_items').select('producto_id,vendidos,quedan').eq('cierre_id', c.id));
+  const items = {}; its.forEach(r => { items[r.producto_id] = { vendidos: String(r.vendidos), quedan: String(r.quedan) }; });
+  S.modal = { tipo: 'corregir', c, items, cinta: c.cinta_total == null ? '' : String(c.cinta_total), motivo: '', buscar: '', err: '', busy: false }; renderModal();
+}
+function htmlCorregir(m) {
+  const lista = S.prods.filter(p => (p.activo || m.items[p.id]) && (!m.buscar || norm(p.nombre).includes(norm(m.buscar))));
+  return `<div class="overlay"><div class="modal wide" role="dialog" aria-modal="true" aria-label="Corregir cierre"><div class="row" style="justify-content:space-between"><h2>Corregir cierre</h2><button class="btn" data-act="mCancel">Cancelar</button></div>
+   <p class="muted" style="margin:0">${h(sucNombre(m.c.sucursal_id))} · ${fFecha(m.c.fecha)} · firmó ${h(m.c.firmado_por)}. La corrección queda registrada con su nombre, el motivo y cómo estaba antes.</p>
+   <div class="row" style="align-items:flex-end"><div class="field" style="flex:2;min-width:220px"><label for="ccmotivo">Motivo (obligatorio)</label><input id="ccmotivo" value="${h(m.motivo)}" placeholder="Ej. Contaron mal el Agua"></div>
+    <div class="field" style="width:150px"><label for="cccinta">Total cinta ($)</label><input id="cccinta" inputmode="decimal" value="${h(m.cinta)}"></div></div>
+   <input id="ccbuscar" data-buscar="cc" value="${h(m.buscar)}" placeholder="Buscar producto…" autocomplete="off">
+   <div class="tbl-wrap" style="max-height:46vh;overflow:auto"><table><thead><tr><th>Producto</th><th class="r">Vendidos</th><th class="r">Quedan</th></tr></thead><tbody>
+   ${lista.map(p => `<tr><td>${h(p.nombre)}</td><td class="r"><input class="pack-in" data-cc="${p.id}|vendidos" inputmode="numeric" value="${h(m.items[p.id]?.vendidos ?? '')}"></td><td class="r"><input class="pack-in" data-cc="${p.id}|quedan" inputmode="numeric" value="${h(m.items[p.id]?.quedan ?? '')}"></td></tr>`).join('')}
+   </tbody></table></div>
+   ${m.err ? `<div class="err">${h(m.err)}</div>` : ''}
+   <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="ccGuardar" ${m.busy ? 'disabled' : ''}>${m.busy ? 'Guardando…' : 'Guardar corrección'}</button></div></div></div>`;
+}
 function renderModal() {
   const m = S.modal; const el = $('modal'); if (!m) { el.innerHTML = ''; return; }
+  if (m.tipo === 'corregir') { el.innerHTML = htmlCorregir(m); return; }
   if (m.tipo === 'info') { el.innerHTML = `<div class="overlay" data-act="mCancelBg"><div class="modal wide" role="dialog" aria-modal="true" aria-label="${h(m.titulo)}"><div class="row" style="justify-content:space-between"><h2>${h(m.titulo)}</h2><button class="btn" data-act="mCancel">Cerrar</button></div>${m.html}</div></div>`; return; }
   if (m.tipo === 'confirm') { el.innerHTML = `<div class="overlay" data-act="mCancelBg"><div class="modal" role="dialog" aria-modal="true" aria-label="${h(m.titulo)}"><h2>${h(m.titulo)}</h2><p class="muted" style="margin:0">${m.texto}</p>${m.err ? `<div class="err">${h(m.err)}</div>` : ''}<div class="row" style="justify-content:flex-end"><button class="btn" data-act="mCancel">Cancelar</button><button class="btn ${m.peligro ? 'danger' : 'primary'}" data-act="mOk" ${m.busy ? 'disabled' : ''}>${m.busy ? 'Guardando…' : h(m.okLabel)}</button></div></div></div>`; return; }
   el.innerHTML = `<div class="overlay" data-act="mCancelBg"><div class="modal" role="dialog" aria-modal="true" aria-label="${h(m.titulo)}"><h2>${h(m.titulo)}</h2>
@@ -814,7 +893,7 @@ document.addEventListener('click', async ev => {
       /* oficina: navegación */
       case 'view': S.view = v; S.modal = null; window.scrollTo(0, 0); if (v === 'semana') { S.sem.rows = null; } break;
       case 'inc': case 'dec': { const k = b.dataset.key; let x = +(getKey(k) || 0) + (a === 'inc' ? 1 : -1); if (x < 0) x = 0; setKey(k, String(x)); b.parentNode.querySelector('input').value = x; despues(k); return; }
-      case 'ingcat': S.ing.cat = v; break;
+      case 'ingcat': S.ing.cat = v; S.ing.buscar = ''; break;
       case 'closeIng': {
         const items = Object.entries(S.ing.qty).filter(([, n]) => +n > 0).map(([pid, n]) => ({ producto_id: +pid, unidades: +n }));
         const prov = S.provs.find(p => p.id === +S.ing.prov);
@@ -841,7 +920,7 @@ document.addEventListener('click', async ev => {
         const cod = await rpc('despachar_plan', { p_sucursal: v }); toast(`${cod} salió hacia ${h(sucNombre(v))}`); await cargarOficina(); }); return;
       case 'dtab': S.dist.tab = v; break;
       case 'dfecha': S.dist.fecha = v; break;
-      case 'dcat': S.dist.cat = v; break;
+      case 'dcat': S.dist.cat = v; S.dist.buscar = ''; break;
       case 'hojaCocina': hojaCocina(); return;
       case 'printEnv': { const e = S.envios.find(x => x.id === +v); if (e) imprimir(e.paquetes); return; }
       case 'llenarBase': { if (!S.dist.disponible) { toast('Falta correr el SQL 06 en Supabase.'); return; }
@@ -895,7 +974,7 @@ document.addEventListener('click', async ev => {
       case 'fpin': { const m = S.modal; if (m.busy) return; m.pin += v; if (m.pin.length >= 4) { await correrModal(); return; } renderModal(); return; }
       case 'fpinDel': S.modal.pin = S.modal.pin.slice(0, -1); renderModal(); return;
       /* tablet */
-      case 'tview': S.t.view = v; if (v === 'cierre' && !S.t.cd) S.t.cd = { vend: {}, quedan: {}, cinta: '', cat: S.cats[0]?.id || 'beb', client: uuid() }; if (v === 'recibir') cargarTablet(); break;
+      case 'tview': S.t.view = v; if (v === 'cierre' && !S.t.cd) S.t.cd = nuevoCd(); if (v === 'recibir') cargarTablet(); break;
       case 'tReload': await cargarTablet(); return;
       case 'sync': S.t.queue.forEach(x => delete x.error); await flushQueue(); return;
       case 'startScan': S.t.scan = { envio: +v, scanned: [], damaged: [], msg: null }; S.t.view = 'scan'; break;
@@ -915,16 +994,48 @@ document.addEventListener('click', async ev => {
       case 'leerCinta': await leerCinta(); return;
       case 'cintaOtra': { const cd = S.t.cd; for (const pid of Object.keys(cd.auto || {})) delete cd.vend[pid]; cd.lectura = null; cd.auto = {}; cd.fotos = []; cd.cintaErr = ''; break; }
       case 'verCierre': await verCierre(v); return;
+      case 'ccAbrir': await abrirCorreccion(v); return;
+      case 'ccGuardar': { const m = S.modal; m.motivo = $('ccmotivo')?.value || ''; m.cinta = $('cccinta')?.value || '';
+        if (!m.motivo.trim()) { m.err = 'Escriba el motivo de la corrección.'; renderModal(); return; }
+        const items = Object.entries(m.items).filter(([, it]) => it.quedan !== undefined && it.quedan !== '').map(([pid, it]) => ({ producto_id: +pid, vendidos: +it.vendidos || 0, quedan: +it.quedan }));
+        m.busy = true; m.err = ''; renderModal();
+        try { await rpc('corregir_cierre_oficina', { p_cierre: m.c.id, p_motivo: m.motivo, p_cinta: m.cinta === '' ? null : +m.cinta, p_items: items }); S.modal = null; renderModal(); toast('Cierre corregido. Quedó registrado con el motivo.'); S.sem.rows = null; await cargarOficina(); }
+        catch (e) { m.busy = false; m.err = errMsg(e); renderModal(); }
+        return; }
+      case 'nada': return;
+      case 'cdPaso': S.t.cd.paso = +v; S.t.cd.buscar = ''; S.t.cd.lista = false; S.t.cd.campo = 'quedan'; window.scrollTo(0, 0); break;
+      case 'cdLista': S.t.cd.lista = !S.t.cd.lista; S.t.cd.buscar = ''; break;
+      case 'cdIr': { const cd = S.t.cd; cd.i = Math.max(0, ordenCierre().findIndex(p => p.id === +v)); cd.paso = 2; cd.lista = false; cd.buscar = ''; cd.campo = 'quedan'; window.scrollTo(0, 0); break; }
+      case 'cdIrFalta': { const cd = S.t.cd; const i = ordenCierre().findIndex(p => !contado(cd, p.id)); cd.i = Math.max(0, i); cd.paso = 2; cd.campo = 'quedan'; break; }
+      case 'cdCampo': S.t.cd.campo = v; break;
+      case 'cdTecla': teclaConteo(v); return;
+      case 'cdMover': { const cd = S.t.cd; cd.i += +v; cd.campo = 'quedan'; break; }
+      case 'cdCorregir': { const u = S.t.ultimo; if (!puedeCorregir()) { toast('Pasaron más de 15 minutos. Pida a oficina central que lo corrija.'); return; }
+        S.t.cd = { ...nuevoCd(), vend: { ...u.vend }, quedan: { ...u.quedan }, cinta: u.cinta, client: u.client, paso: 3, correccion: true }; S.t.view = 'cierre'; break; }
       case 'cdConfirm': S.t.cd.confirm = true; break;
       case 'cdBack': S.t.cd.confirm = false; break;
       case 'approveCd': { const cd = S.t.cd;
+        const items = () => S.t.prods.map(p => ({ producto_id: p.id, vendidos: +cd.vend[p.id] || 0, quedan: +cd.quedan[p.id] || 0 }));
+        const guardarUltimo = (firma, en) => { S.t.ultimo = { client: cd.client, fecha: hoy(), firmado_por: firma, cerrado_en: en, vend: { ...cd.vend }, quedan: { ...cd.quedan }, cinta: cd.cinta }; store.set('ultimo', S.t.ultimo); };
+        if (cd.correccion) {
+          pedirFirma('Guardar corrección', async m => {
+            const enCola = S.t.queue.find(x => x.tipo === 'cd' && x.args.p_client === cd.client);
+            if (enCola) { enCola.args.p_items = items(); enCola.args.p_cinta = +cd.cinta || 0; store.set('queue', S.t.queue); toast('Corrección guardada. Se enviará junto con el cierre.'); }
+            else {
+              const item = { tipo: 'cc', rpc: 'corregir_cierre', args: { p_client: cd.client, p_firma: m.user, p_pin: m.pin, p_cinta: +cd.cinta || 0, p_items: items(), p_en: new Date().toISOString() } };
+              try { await q(sb.rpc('corregir_cierre', { p_client: cd.client, p_firma: m.user, p_pin: m.pin, p_cinta: +cd.cinta || 0, p_items: items() })); toast('Corrección guardada. Oficina central ya la ve.'); }
+              catch (err) { if (!esRed(err)) throw err; delete item.args.p_en; encolar(item); S.t.online = false; toast('Sin internet: la corrección se enviará sola.'); }
+            }
+            guardarUltimo(S.t.ultimo?.firmado_por || m.user, S.t.ultimo?.cerrado_en || new Date().toISOString()); S.t.cd = null; S.t.view = 'hecho';
+          }); return;
+        }
         pedirFirma('Cerrar el día', async m => {
           const item = { tipo: 'cd', rpc: 'cerrar_dia', args: { p_client: cd.client, p_fecha: hoy(), p_firma: m.user, p_pin: m.pin, p_cinta: +cd.cinta || 0, p_en: new Date().toISOString(),
             p_items: S.t.prods.map(p => ({ producto_id: p.id, vendidos: +cd.vend[p.id] || 0, quedan: +cd.quedan[p.id] || 0 })) }, local: { firmado_por: m.user, cerrado_en: new Date().toISOString() } };
           if (cd.fotos?.length) { item.args.p_foto = cd.fotos[0]; item.args.p_lectura = { ...(cd.lectura || {}), fotos: cd.fotos }; }
-          try { await ejecutar(item); S.t.cerrado = item.local; toast('Día cerrado. Oficina central ya lo ve.'); }
+          try { await ejecutar(item); S.t.cerrado = item.local; }
           catch (err) { if (!esRed(err)) throw err; encolar(item); S.t.online = false; toast('Sin internet: el cierre quedó guardado en la tablet y se enviará solo.'); }
-          S.t.cd = null; S.t.view = 'home';
+          guardarUltimo(m.user, item.local.cerrado_en); S.t.cd = null; S.t.view = 'hecho';
         }); return; }
     }
     render();
@@ -940,6 +1051,15 @@ function despues(k) {
   if (k === 'pk.n' || k.startsWith('visit.counts') || k.startsWith('plan.')) render();
 }
 document.addEventListener('input', ev => {
+  if (ev.target.dataset.buscar) {
+    const t = ev.target.dataset.buscar, v = ev.target.value, id = ev.target.id, pos = ev.target.selectionStart;
+    if (t === 'cd') S.t.cd.buscar = v; else if (t === 'ing') S.ing.buscar = v; else if (t === 'dist') S.dist.buscar = v; else if (t === 'prod') S.pbuscar = v;
+    else if (t === 'cc') { S.modal.buscar = v; renderModal(); } if (t !== 'cc') render();
+    const el = $(id); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch { } } return;
+  }
+  if (ev.target.id === 'ccmotivo') { S.modal.motivo = ev.target.value; return; }
+  if (ev.target.id === 'cccinta') { S.modal.cinta = ev.target.value; return; }
+  if (ev.target.dataset.cc) { const [pid, campo] = ev.target.dataset.cc.split('|'); const v = ev.target.value.replace(/\D/g, ''); ev.target.value = v; const it = (S.modal.items[pid] ||= {}); it[campo] = v; return; }
   if (ev.target.dataset.ped) { const [su, pid] = ev.target.dataset.ped.split('|'); const v = ev.target.value.replace(/\D/g, ''); ev.target.value = v; const o = pedidoDe(S.dist.fecha, su); if (v === '' || +v === 0) delete o[pid]; else o[pid] = +v; refrescarTotalesPedido(su, pid); return; }
   const k = ev.target.dataset.key; if (!k || k === 'planAdd') return; let v = ev.target.value; if (ev.target.inputMode === 'numeric') { v = v.replace(/\D/g, ''); ev.target.value = v; } setKey(k, v); if (k !== 'pk.n' && !k.startsWith('visit.counts') && !k.startsWith('plan.')) despues(k); });
 document.addEventListener('change', async ev => {
@@ -968,6 +1088,13 @@ document.addEventListener('change', async ev => {
   if (k.startsWith('visit.counts') || k.startsWith('plan.')) render();
 });
 document.addEventListener('keydown', ev => {
+  const cd = S.t.cd;
+  if (S.mode === 'tablet' && S.t.view === 'cierre' && cd?.paso === 2 && !cd.lista && !cd.buscar && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName) && !S.modal) {
+    if (/^\d$/.test(ev.key)) { teclaConteo(ev.key); return; }
+    if (ev.key === 'Backspace') { teclaConteo('borrar'); return; }
+    if (ev.key === 'Enter' || ev.key === 'ArrowRight') { if (cd.i < S.t.prods.length - 1) { cd.i++; cd.campo = 'quedan'; render(); } return; }
+    if (ev.key === 'ArrowLeft') { if (cd.i > 0) { cd.i--; cd.campo = 'quedan'; render(); } return; }
+  }
   if (ev.key !== 'Enter') return; const id = ev.target.id;
   if (id === 'envscan') { ev.preventDefault(); document.querySelector('[data-act="envScan"]')?.click(); }
   if (id === 'mancode') document.querySelector('[data-act="manScan"]')?.click();
