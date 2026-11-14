@@ -517,8 +517,7 @@ function vEquipo() {
   const ofi = S.perfiles.filter(p => p.rol !== 'sucursal').map(p => `<tr><td><b>${h(p.nombre)}</b></td><td>${perfil[p.rol]}${p.enfoque ? ' · ' + h(p.enfoque) : ''}</td><td class="small">${p.rol === 'duena' ? 'Todo: resumen, costos, cierre semanal, plan de distribución, checklist, productos y equipo.' : 'Ingresos, paquetes, distribución, envíos y supervisión. No ve costos ni dinero.'}</td></tr>`).join('');
   const suc = S.suc.map(s => `<tr><td><b>${S.personal.filter(p => p.sucursal_id === s.id && p.activo).map(p => h(p.nombre)).join(', ') || '—'}</b></td><td>Tablet ${h(s.nombre)}</td><td class="small">Recibir envíos y cierre del día, firmando con su PIN. No ve el inventario esperado.</td></tr>`).join('');
   return head('Accesos', 'Equipo', 'Ricardo, Rebeca y Chris comparten el perfil de Operaciones para poder cubrirse entre sí. Cada acción queda firmada con el nombre de quien la hizo.') + `
-  <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Perfil</th><th>Qué puede hacer</th></tr></thead><tbody>${ofi}${suc}</tbody></table></div></section>
-  <section class="panel stack"><h2>Demostración</h2><p class="muted" style="margin:0">Borra toda la operación y vuelve a simular 4 semanas desde cero. Útil antes de presentar la demo.</p><div><button class="btn danger" data-act="resetDemo">Reiniciar datos de demostración</button></div></section>`;
+  <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Persona</th><th>Perfil</th><th>Qué puede hacer</th></tr></thead><tbody>${ofi}${suc}</tbody></table></div></section>`;
 }
 
 function office() {
