@@ -38,6 +38,14 @@ details summary{cursor:pointer;color:var(--muted)}
 .ped input.receta{margin-top:4px;width:100%;max-width:180px;height:28px;font-size:12px;padding:3px 8px}
 .ped tfoot td{background:#FAFBF9}
 
+/* Despacho de hoy */
+.desp-card{border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.desp-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.desp-head .row{gap:8px}
+.desp-suc{font-family:var(--f-serif);font-size:20px;color:var(--ink)}
+.desp-items{display:flex;flex-wrap:wrap;gap:6px}
+.desp-items .chip{cursor:default}
+
 /* Cierre por pasos */
 .pasos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .paso{display:flex;align-items:center;gap:10px;border:1px solid var(--line-strong);background:#FFFFFF;border-radius:14px;padding:10px 12px;text-align:left;font-size:14px;color:var(--muted)}

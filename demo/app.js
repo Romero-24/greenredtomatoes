@@ -231,14 +231,14 @@ const visitOk = v => v.visita_respuestas.filter(r => r.ok).length;
 
 /* =================== vistas de oficina =================== */
 function vResumen() {
-  const hoyS = S.suc.filter(s => tocaHoy(s.id));
+  const hoyS = S.suc.filter(s => pedidoUnidades(hoy(), s.id) > 0 || envioHoy(s.id));
   const entregados = hoyS.filter(s => { const e = envioHoy(s.id); return e && e.estado !== 'en_camino'; }).length;
   const cierresHoy = S.cierres.filter(c => c.fecha === hoy());
   const tot = S.netoPrev ? Object.values(S.netoPrev).reduce((a, o) => ({ f: a.f + o.f, s: a.s + o.s }), { f: 0, s: 0 }) : null;
   const rows = S.suc.map(s => {
     const c = cierresHoy.find(x => x.sucursal_id === s.id); const ult = S.cierres.find(x => x.sucursal_id === s.id);
     const e = envioHoy(s.id); const lv = ultimaVisita(s.id); const n = S.netoPrev?.[s.id]; const neto = n ? n.f + n.s : null;
-    const env = tocaHoy(s.id) ? (e ? ST[e.estado] : '<span class="pill neutral">Por despachar</span>') : '<span class="muted">No toca hoy</span>';
+    const env = e ? ST[e.estado] : pedidoUnidades(hoy(), s.id) > 0 ? '<span class="pill neutral">Por despachar</span>' : '<span class="muted">Sin pedido hoy</span>';
     const vis = lv ? `${diasDesde(lv.fecha) === 0 ? 'Hoy' : diasDesde(lv.fecha) === 1 ? 'Ayer' : 'Hace ' + diasDesde(lv.fecha) + ' días'} <span class="muted small">· ${visitOk(lv)}/${lv.visita_respuestas.length}</span>` : '<span class="muted">—</span>';
     const verUlt = ult ? `<button class="linkbtn" data-act="verCierre" data-v="${ult.id}">${c ? 'Ver cierre' : 'Último: ' + fCuando(ult.cerrado_en)}${ult.foto_cinta ? ' · 📷' : ''}</button>` : '';
     return `<tr><td><b>${h(s.nombre)}</b></td><td>${c ? `<span class="pill ok">${h(c.firmado_por)} · ${fHora(c.cerrado_en)}</span><br>${verUlt}` : `<span class="pill neutral">Pendiente</span>${ult ? `<br>${verUlt}` : ''}`}</td><td>${env}</td><td>${vis}</td><td class="r ${neto < -5 ? 'neg' : neto > 0 ? 'pos' : ''}">${neto == null ? '<span class="muted">…</span>' : moneyS(neto)}</td></tr>`;
@@ -339,21 +339,26 @@ function vPedido() {
   </section>`;
 }
 function vDespacho() {
+  // Solo se despacha lo que la dueña puso en el Pedido del día (el pedido base sirve únicamente para llenarlo rápido)
   const F = hoy();
-  const lista = S.suc.filter(s => pedidoUnidades(F, s.id) > 0 || tocaHoy(s.id) || envioHoy(s.id));
-  const rows = lista.map(s => {
-    const e = envioHoy(s.id); const usaPedido = pedidoUnidades(F, s.id) > 0; let st, act = '';
-    const lleva = usaPedido ? Object.entries(S.pedidos[F][s.id]).filter(([, n]) => n > 0).map(([pid, n]) => `${h(S.P[pid]?.nombre)} <span class="muted">×${n}</span>`).join(' · ') : pedidoTxt(s.id) + ' <span class="muted small">(pedido base)</span>';
-    if (!e) {
-      if (usaPedido) { st = '<span class="pill neutral">Por despachar</span>'; act = `<button class="btn primary" data-act="dDespPed" data-v="${s.id}">Despachar</button>`; }
-      else { const f = faltantesPlan(s.id); st = f.length ? `<span class="pill bad">Faltan paquetes: ${f.map(([p, n]) => h(S.P[p]?.nombre) + ' (' + n + ')').join(', ')}</span>` : '<span class="pill neutral">Por despachar</span>'; act = f.length ? `<button class="btn" data-act="view" data-v="paquetes">Armar paquetes</button>` : `<button class="btn primary" data-act="dDesp" data-v="${s.id}">Despachar</button>`; }
-    }
-    else if (e.estado === 'en_camino') { st = `${ST.en_camino}<br><span class="muted small">Salió ${fHora(e.salio_en)} · ${h(e.salio_por)}</span>`; act = `<button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button> <button class="btn primary" data-act="dEntr" data-v="${e.id}">Marcar entregado</button>`; }
-    else if (e.estado === 'entregado') { st = `${ST.entregado}<br><span class="muted small">Dejado ${fHora(e.entregado_en)} · ${h(e.entregado_por)}</span>`; act = `<button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button>`; }
-    else st = `${ST[e.estado]}<br><span class="muted small">${h(e.recibido_por)} · ${fHora(e.recibido_en)}</span>`;
-    return `<tr><td><b>${h(s.nombre)}</b>${e ? `<br><span class="mono muted">${e.codigo}</span>` : ''}</td><td class="small">${lleva}</td><td>${st}</td><td class="r" style="white-space:nowrap">${act}</td></tr>`;
+  const lista = S.suc.filter(s => pedidoUnidades(F, s.id) > 0 || envioHoy(s.id));
+  const cards = lista.map(s => {
+    const e = envioHoy(s.id); let st, act = '';
+    const items = e ? Object.values(e.paquetes.reduce((a, k) => { const o = a[k.producto_id] ||= { pid: k.producto_id, n: 0 }; o.n += k.unidades; return a; }, {}))
+                    : Object.entries(S.pedidos[F]?.[s.id] || {}).filter(([, n]) => n > 0).map(([pid, n]) => ({ pid, n }));
+    const total = sum(items.map(i => i.n));
+    if (!e) { st = '<span class="pill neutral">Por despachar</span>'; act = `<button class="btn primary" data-act="dDespPed" data-v="${s.id}">Despachar</button>`; }
+    else if (e.estado === 'en_camino') { st = `${ST.en_camino} <span class="muted small">salió ${fHora(e.salio_en)} · ${h(e.salio_por)}</span>`; act = `<button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button><button class="btn primary" data-act="dEntr" data-v="${e.id}">Marcar entregado</button>`; }
+    else if (e.estado === 'entregado') { st = `${ST.entregado} <span class="muted small">dejado ${fHora(e.entregado_en)} · ${h(e.entregado_por)}</span>`; act = `<button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button>`; }
+    else st = `${ST[e.estado]} <span class="muted small">${h(e.recibido_por)} · ${fHora(e.recibido_en)}</span>`;
+    return `<div class="desp-card"><div class="desp-head"><div><b class="desp-suc">${h(s.nombre)}</b>${e ? ` <span class="mono muted">${e.codigo}</span>` : ''}<div>${st}</div></div><div class="row">${act}</div></div>
+      <div class="desp-items">${items.map(i => `<span class="chip">${h(S.P[i.pid]?.nombre)} <b>×${i.n}</b></span>`).join('')}</div>
+      <span class="muted small">${items.length} productos · ${total} unidades</span></div>`;
   }).join('');
-  return `<section class="panel"><div class="panel-h"><h2>Despacho de hoy · ${DAYN[diaSemana(F)]}</h2><span class="muted">Se despacha el pedido del día; si una sucursal no tiene pedido, el pedido base</span></div><div class="tbl-wrap"><table><thead><tr><th>Sucursal</th><th>Qué lleva</th><th>Estado</th><th></th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="muted">Hoy no hay nada que despachar.</td></tr>'}</tbody></table></div></section>`;
+  const sinPedido = S.suc.filter(s => !lista.includes(s)).map(s => s.nombre);
+  return `<section class="panel stack"><div class="panel-h" style="margin:0"><h2>Despacho de hoy · ${DAYN[diaSemana(F)]}</h2><span class="muted">Se despacha exactamente lo del Pedido del día</span></div>
+   ${cards || `<div class="note">Todavía no hay pedido para hoy. La dueña lo arma en <button class="linkbtn" data-act="dtab" data-v="pedido">Pedido del día</button>.</div>`}
+   ${cards && sinPedido.length ? `<span class="muted small">Sin pedido hoy: ${sinPedido.map(h).join(', ')}</span>` : ''}</section>`;
 }
 function vPlan() {
   const own = isOwner(); const hoyIdx = diaSemana(hoy());
@@ -528,7 +533,7 @@ function vEquipo() {
 function office() {
   const views = { resumen: vResumen, ingreso: vIngreso, paquetes: vPaquetes, distribucion: vDistrib, envios: vEnvios, supervision: vSuper, semana: vSemana, productos: vProductos, equipo: vEquipo };
   const groups = NAV[S.perfil.rol];
-  const counts = { distribucion: S.suc.filter(s => (tocaHoy(s.id) || pedidoUnidades(hoy(), s.id) > 0) && !envioHoy(s.id)).length, supervision: S.visitas.some(v => v.fecha === hoy()) ? 0 : 1 };
+  const counts = { distribucion: S.suc.filter(s => pedidoUnidades(hoy(), s.id) > 0 && !envioHoy(s.id)).length, supervision: S.visitas.some(v => v.fecha === hoy()) ? 0 : 1 };
   const label = groups.flatMap(g => g[1]).find(x => x[0] === S.view)?.[1] || ''; const grp = groups.find(g => g[1].some(x => x[0] === S.view))?.[0] || '';
   const vacio = !S.suc.length;
   return `<div class="shell">
