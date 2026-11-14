@@ -273,6 +273,7 @@ function vIngreso() {
   ${S.ingresos.map(i => `<tr><td>${fCuando(i.cerrado_en)}</td><td>${h(i.proveedores?.nombre)}</td><td class="r">${i.ingreso_items.length}</td><td class="r">${sum(i.ingreso_items.map(x => x.unidades)).toLocaleString('es')}</td><td>${h(i.cerrado_por)}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
 
+function dibujarCodigos() { if (window.JsBarcode) document.querySelectorAll('#modal svg[data-code]').forEach(s => { try { JsBarcode(s, s.dataset.code, { format: 'CODE128', displayValue: false, margin: 0, height: 60, width: 2, background: '#ffffff', lineColor: '#111111' }); } catch { } }); }
 function labelHTML(pk) {
   const p = S.P[pk.producto_id];
   return `<div class="label"><div class="lt"><span>GREEN &amp; RED TOMATOES</span><span>${pk.indice} de ${pk.de_total}</span></div><div class="ln">${h(p?.nombre)}</div><div class="lu">${pk.unidades} unidades · ${fFecha(isoLocal(new Date(pk.creado_en || Date.now())))}</div><svg data-code="${pk.codigo}"></svg><div class="lc">${pk.codigo}</div></div>`;
@@ -400,8 +401,8 @@ function vEnvios() {
   const avail = {}; S.paqBodega.filter(x => !S.env.codes.includes(x.codigo)).forEach(x => (avail[x.producto_id] ||= []).push(x));
   const inDraft = {}; S.env.codes.forEach(c => { const pk = S.paqBodega.find(x => x.codigo === c); if (pk) inDraft[pk.producto_id] = (inDraft[pk.producto_id] || 0) + 1; });
   return head('Bodega central · Distribución', 'Envíos', 'Todo lo que sale de bodega en las últimas dos semanas. Para algo fuera del plan, arme aquí un envío extra.') + `
-  <section class="panel"><div class="panel-h"><h2>Historial</h2></div><div class="tbl-wrap"><table><thead><tr><th>Envío</th><th>Sucursal</th><th>Salió</th><th>Lo dejó</th><th class="r">Paquetes</th><th>Estado</th><th>Recibió</th></tr></thead><tbody>
-  ${S.envios.map(e => { const falt = e.paquetes.filter(p => p.estado === 'faltante' || p.estado === 'danado').length; return `<tr><td class="mono">${e.codigo}${e.origen === 'extra' ? ' <span class="pill neutral">extra</span>' : ''}</td><td><b>${h(sucNombre(e.sucursal_id))}</b></td><td>${fCuando(e.salio_en)}<br><span class="muted small">${h(e.salio_por)}</span></td><td>${e.entregado_en ? `${fHora(e.entregado_en)}<br><span class="muted small">${h(e.entregado_por)}</span>` : '<span class="muted">—</span>'}</td><td class="r">${e.paquetes.length}${falt ? ` <span class="neg">(${falt} no llegó)</span>` : ''}</td><td>${ST[e.estado]}</td><td>${e.recibido_por ? h(e.recibido_por) + '<br><span class="muted small">' + fHora(e.recibido_en) + '</span>' : '<span class="muted">—</span>'}</td></tr>`; }).join('')}
+  <section class="panel"><div class="panel-h"><h2>Historial</h2></div><div class="tbl-wrap"><table><thead><tr><th>Envío</th><th>Sucursal</th><th>Salió</th><th>Lo dejó</th><th class="r">Paquetes</th><th>Estado</th><th>Recibió</th><th></th></tr></thead><tbody>
+  ${S.envios.map(e => { const falt = e.paquetes.filter(p => p.estado === 'faltante' || p.estado === 'danado').length; return `<tr><td class="mono">${e.codigo}${e.origen === 'extra' ? ' <span class="pill neutral">extra</span>' : ''}</td><td><b>${h(sucNombre(e.sucursal_id))}</b></td><td>${fCuando(e.salio_en)}<br><span class="muted small">${h(e.salio_por)}</span></td><td>${e.entregado_en ? `${fHora(e.entregado_en)}<br><span class="muted small">${h(e.entregado_por)}</span>` : '<span class="muted">—</span>'}</td><td class="r">${e.paquetes.length}${falt ? ` <span class="neg">(${falt} no llegó)</span>` : ''}</td><td>${ST[e.estado]}</td><td>${e.recibido_por ? h(e.recibido_por) + '<br><span class="muted small">' + fHora(e.recibido_en) + '</span>' : '<span class="muted">—</span>'}</td><td class="r" style="white-space:nowrap"><button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button>${e.estado === 'en_camino' || e.estado === 'entregado' ? ` <button class="btn danger" data-act="anularEnv" data-v="${e.id}">Anular</button>` : ''}</td></tr>`; }).join('')}
   </tbody></table></div></section>
   <div class="grid2b">
    <section class="panel stack"><h2>Envío extra</h2>
@@ -927,7 +928,12 @@ document.addEventListener('click', async ev => {
       case 'dfecha': S.dist.fecha = v; break;
       case 'dcat': S.dist.cat = v; S.dist.buscar = ''; break;
       case 'hojaCocina': hojaCocina(); return;
-      case 'printEnv': { const e = S.envios.find(x => x.id === +v); if (e) imprimir(e.paquetes); return; }
+      case 'printEnv': { const e = S.envios.find(x => x.id === +v); if (!e) return;
+        S.modal = { tipo: 'info', titulo: 'Etiquetas de ' + e.codigo, html: `<p class="muted" style="margin:0">${h(sucNombre(e.sucursal_id))} · ${e.paquetes.length} paquete(s). Péguelas en cada paquete o bandeja. Para probar sin impresora, la sucursal puede escanear el código directo de esta pantalla.</p>
+          <div class="labels">${e.paquetes.map(labelHTML).join('')}</div>
+          <div class="row" style="justify-content:flex-end"><button class="btn primary" data-act="printEnvGo" data-v="${e.id}">Imprimir</button><button class="btn" data-act="mCancel">Cerrar</button></div>` };
+        renderModal(); dibujarCodigos(); return; }
+      case 'printEnvGo': { const e = S.envios.find(x => x.id === +v); if (e) imprimir(e.paquetes); return; }
       case 'anularEnv': { const e = S.envios.find(x => x.id === +v); if (!e) return;
         confirmar('Anular ' + e.codigo, `El envío a <b>${h(sucNombre(e.sucursal_id))}</b> se cancela y sus ${e.paquetes.length} paquete(s) regresan a bodega. Úselo si se despachó por error o dos veces. Queda registrado en la actividad. Después puede volver a despachar el pedido.`, 'Anular envío', async () => {
           await rpc('anular_envio', { p_codigo: e.codigo, p_motivo: 'Anulado desde Despacho' }); toast(e.codigo + ' anulado. Los paquetes regresaron a bodega.'); await cargarOficina(); }, true); return; }
