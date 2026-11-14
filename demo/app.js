@@ -566,7 +566,7 @@ document.addEventListener('submit', ev => { if (ev.target.id === 'loginform') { 
 
 /* =================== TABLET =================== */
 async function cargarTablet() {
-  S.t.prods = store.get('prods', []); S.t.personal = store.get('personal', []); S.t.envios = store.get('envios', []); S.t.ultimo = store.get('ultimo', null);
+  S.t.prods = store.get('prods', []); S.t.personal = store.get('personal', []); S.t.envios = store.get('envios', []); S.t.ultimo = store.get('ultimo', null); S.t.relevantes = store.get('relevantes', null);
   render();
   try {
     const [prods, personal, envios, cierre] = await Promise.all([
@@ -581,6 +581,8 @@ async function cargarTablet() {
     const pendientes = new Set(S.t.queue.filter(x => x.tipo === 'rec').map(x => x.args.p_envio));
     S.t.envios = envios.filter(e => !pendientes.has(e.id));
     store.set('prods', prods); store.set('personal', S.t.personal); store.set('envios', S.t.envios);
+    const rel = await sb.rpc('productos_de_mi_sucursal');
+    if (!rel.error) { S.t.relevantes = (rel.data || []).map(r => r.producto_id); store.set('relevantes', S.t.relevantes); }
     S.t.online = true;
   } catch (e) { if (!esRed(e)) toast('Error al cargar: ' + h(errMsg(e))); S.cats = store.get('cats', S.cats); }
   if (!S.cats.length) S.cats = store.get('cats', []);
@@ -661,7 +663,10 @@ const cargarScript = src => new Promise((ok, mal) => { if (document.querySelecto
 /* ---------- Cierre del día por pasos: 1 cinta · 2 contar · 3 revisar y firmar ---------- */
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 const contado = (cd, pid) => cd.quedan[pid] !== undefined && cd.quedan[pid] !== '';
-function ordenCierre() { const orden = Object.fromEntries(S.cats.map((c, i) => [c.id, i])); return S.t.prods.slice().sort((a, b) => (orden[a.categoria_id] ?? 99) - (orden[b.categoria_id] ?? 99) || a.id - b.id); }
+const esInicial = () => !(S.t.relevantes && S.t.relevantes.length);
+function ordenCierre() { const orden = Object.fromEntries(S.cats.map((c, i) => [c.id, i])); const cd = S.t.cd || {};
+  const base = esInicial() ? S.t.prods : S.t.prods.filter(p => S.t.relevantes.includes(p.id) || (cd.extra || []).includes(p.id) || cd.auto?.[p.id] !== undefined || (cd.quedan && contado(cd, p.id)));
+  return base.slice().sort((a, b) => (orden[a.categoria_id] ?? 99) - (orden[b.categoria_id] ?? 99) || a.id - b.id); }
 function nuevoCd() { return { vend: {}, quedan: {}, cinta: '', client: uuid(), paso: 1, i: 0, campo: 'quedan', lista: false, buscar: '' }; }
 const pasosBar = cd => `<div class="pasos">${['Cinta de la caja', 'Contar lo que queda', 'Revisar y firmar'].map((t, i) => `<button class="paso ${cd.paso === i + 1 ? 'on' : ''} ${cd.paso > i + 1 ? 'hecho' : ''}" data-act="cdPaso" data-v="${i + 1}"><b>${cd.paso > i + 1 ? '✓' : i + 1}</b><span>${t}</span></button>`).join('')}</div>`;
 function tCierre() {
@@ -676,12 +681,15 @@ function tCierre() {
    <div class="sticky-foot"><span class="muted">${cd.lectura ? 'Cinta leída. Ahora cuente lo que queda.' : 'La foto es opcional.'}</span><button class="tbtn primary" data-act="cdPaso" data-v="2" style="margin-left:auto">${cd.lectura ? 'Seguir: contar →' : 'Seguir sin foto →'}</button></div>`;
 
   if (cd.paso === 2) {
-    const busc = `<div class="row"><input id="cdbuscar" data-buscar="cd" value="${h(cd.buscar)}" placeholder="Buscar producto…" autocomplete="off" style="flex:1;min-width:0;height:48px;font-size:17px"><button class="tbtn ghost" data-act="cdLista">${cd.lista ? 'Uno por uno' : 'Ver lista'}</button></div>`;
+    const otros = S.t.prods.filter(x => !prods.some(y => y.id === x.id));
+    const agregar = otros.length ? `<div class="row"><select id="cdagregar" style="flex:1;min-width:0;height:48px;font-size:16px"><option value="">+ ¿Tiene otro producto? Agréguelo aquí…</option>${otros.map(x => `<option value="${x.id}">${h(x.nombre)}</option>`).join('')}</select></div>` : '';
+    const aviso = esInicial() ? '<div class="flash warn" style="font-size:15px">Primer cierre de la sucursal: cuente <b>todo</b> lo que hay. Será su inventario inicial. Desde mañana solo aparecerán los productos que le envían.</div>' : `<span class="muted small">Se muestran los ${prods.length} productos de esta sucursal (lo que le han enviado y lo que le quedaba).</span>`;
+    const busc = aviso + `<div class="row"><input id="cdbuscar" data-buscar="cd" value="${h(cd.buscar)}" placeholder="Buscar producto…" autocomplete="off" style="flex:1;min-width:0;height:48px;font-size:17px"><button class="tbtn ghost" data-act="cdLista">${cd.lista ? 'Uno por uno' : 'Ver lista'}</button></div>`;
     const prog = `<div><div class="row" style="justify-content:space-between"><span class="muted">Contados</span><b>${done} de ${prods.length}</b></div><div class="progress"><i style="width:${prods.length ? done / prods.length * 100 : 0}%"></i></div></div>`;
     const resultados = cd.buscar ? prods.filter(p => norm(p.nombre).includes(norm(cd.buscar))) : null;
     if (cd.lista || resultados) {
       const lista = resultados || prods;
-      return top + prog + busc + `<div class="note" style="font-size:15px">${resultados ? "Toque el producto para contarlo." : "Esta es la lista de todo. Toque un producto para contarlo, o use <b>Uno por uno</b> para ir en orden con el teclado."}</div><div>${lista.map(p => `<button class="cd-item ${contado(cd, p.id) ? 'done' : ''}" data-act="cdIr" data-v="${p.id}">${thumb(p)}<span class="nm">${h(p.nombre)}</span><span class="vals">${cd.vend[p.id] ? `<span class="muted small">Vendió ${cd.vend[p.id]}</span>` : ''}<b>${contado(cd, p.id) ? 'Quedan ' + cd.quedan[p.id] : 'Sin contar'}</b></span></button>`).join('') || '<div class="note">No hay productos con ese nombre.</div>'}</div>
+      return top + prog + busc + `${agregar}<div class="note" style="font-size:15px">${resultados ? "Toque el producto para contarlo." : "Esta es la lista de todo. Toque un producto para contarlo, o use <b>Uno por uno</b> para ir en orden con el teclado."}</div><div>${lista.map(p => `<button class="cd-item ${contado(cd, p.id) ? 'done' : ''}" data-act="cdIr" data-v="${p.id}">${thumb(p)}<span class="nm">${h(p.nombre)}</span><span class="vals">${cd.vend[p.id] ? `<span class="muted small">Vendió ${cd.vend[p.id]}</span>` : ''}<b>${contado(cd, p.id) ? 'Quedan ' + cd.quedan[p.id] : 'Sin contar'}</b></span></button>`).join('') || '<div class="note">No hay productos con ese nombre.</div>'}</div>
        <div class="sticky-foot"><button class="tbtn primary" data-act="cdPaso" data-v="3" style="margin-left:auto">Revisar y firmar →</button></div>`;
     }
     cd.i = Math.max(0, Math.min(cd.i, prods.length - 1)); const p = prods[cd.i]; if (!p) return top + '<div class="note">No hay productos cargados. Conéctese a internet una vez.</div>';
@@ -696,7 +704,7 @@ function tCierre() {
       </div>
       <div class="teclado">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-act="cdTecla" data-v="${d}">${d}</button>`).join('')}<button data-act="cdTecla" data-v="borrar" class="t-sec">Borrar</button><button data-act="cdTecla" data-v="0">0</button><button data-act="cdTecla" data-v="cero" class="t-sec">No hay (0)</button></div>
       <div class="row conteo-nav"><button class="tbtn ghost" data-act="cdMover" data-v="-1" ${cd.i === 0 ? 'disabled' : ''}>← Anterior</button>
-       ${cd.i < prods.length - 1 ? `<button class="tbtn primary" data-act="cdMover" data-v="1" style="margin-left:auto">Siguiente →</button>` : `<button class="tbtn primary" data-act="cdPaso" data-v="3" style="margin-left:auto">Revisar y firmar →</button>`}</div>
+       ${cd.i === prods.length - 1 && agregar ? '' : ''}${cd.i < prods.length - 1 ? `<button class="tbtn primary" data-act="cdMover" data-v="1" style="margin-left:auto">Siguiente →</button>` : `<button class="tbtn primary" data-act="cdPaso" data-v="3" style="margin-left:auto">Revisar y firmar →</button>`}</div>
      </div>`;
   }
 
@@ -720,7 +728,7 @@ function tHecho() {
 function puedeCorregir() { const u = S.t.ultimo; return u && u.fecha === hoy() && Date.now() - new Date(u.cerrado_en) < 15 * 60000; }
 function teclaConteo(v) {
   const cd = S.t.cd; const p = ordenCierre()[cd.i]; if (!p) return; const k = cd.campo; let cur = String(cd[k][p.id] ?? '');
-  if (v === 'borrar') cur = cur.slice(0, -1); else if (v === 'cero') { cd.quedan[p.id] = '0'; cd.campo = 'quedan'; if (cd.i < S.t.prods.length - 1) cd.i++; render(); return; }
+  if (v === 'borrar') cur = cur.slice(0, -1); else if (v === 'cero') { cd.quedan[p.id] = '0'; cd.campo = 'quedan'; if (cd.i < ordenCierre().length - 1) cd.i++; render(); return; }
   else cur = (cur === '0' ? '' : cur) + v;
   if (cur.length > 4) return; cd[k][p.id] = cur; render();
 }
@@ -1082,6 +1090,8 @@ document.addEventListener('input', ev => {
   if (ev.target.dataset.ped) { const [su, pid] = ev.target.dataset.ped.split('|'); const v = ev.target.value.replace(/\D/g, ''); ev.target.value = v; const o = pedidoDe(S.dist.fecha, su); if (v === '' || +v === 0) delete o[pid]; else o[pid] = +v; refrescarTotalesPedido(su, pid); return; }
   const k = ev.target.dataset.key; if (!k || k === 'planAdd') return; let v = ev.target.value; if (ev.target.inputMode === 'numeric') { v = v.replace(/\D/g, ''); ev.target.value = v; } setKey(k, v); if (k !== 'pk.n' && !k.startsWith('visit.counts') && !k.startsWith('plan.')) despues(k); });
 document.addEventListener('change', async ev => {
+  if (ev.target.id === 'cdagregar') { const pid = +ev.target.value; if (!pid) return; const cd = S.t.cd; (cd.extra ||= []).push(pid);
+    cd.i = Math.max(0, ordenCierre().findIndex(p => p.id === pid)); cd.lista = false; cd.buscar = ''; cd.campo = 'quedan'; render(); return; }
   if (ev.target.id === 'fcam' || ev.target.id === 'fgal') {
     const files = [...(ev.target.files || [])]; ev.target.value = ''; if (!files.length) return;
     const cd = S.t.cd; cd.fotosLocal ||= [];
@@ -1111,7 +1121,7 @@ document.addEventListener('keydown', ev => {
   if (S.mode === 'tablet' && S.t.view === 'cierre' && cd?.paso === 2 && !cd.lista && !cd.buscar && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName) && !S.modal) {
     if (/^\d$/.test(ev.key)) { teclaConteo(ev.key); return; }
     if (ev.key === 'Backspace') { teclaConteo('borrar'); return; }
-    if (ev.key === 'Enter' || ev.key === 'ArrowRight') { if (cd.i < S.t.prods.length - 1) { cd.i++; cd.campo = 'quedan'; render(); } return; }
+    if (ev.key === 'Enter' || ev.key === 'ArrowRight') { if (cd.i < ordenCierre().length - 1) { cd.i++; cd.campo = 'quedan'; render(); } return; }
     if (ev.key === 'ArrowLeft') { if (cd.i > 0) { cd.i--; cd.campo = 'quedan'; render(); } return; }
   }
   if (ev.key !== 'Enter') return; const id = ev.target.id;
