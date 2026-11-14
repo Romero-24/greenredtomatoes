@@ -348,8 +348,8 @@ function vDespacho() {
                     : Object.entries(S.pedidos[F]?.[s.id] || {}).filter(([, n]) => n > 0).map(([pid, n]) => ({ pid, n }));
     const total = sum(items.map(i => i.n));
     if (!e) { st = '<span class="pill neutral">Por despachar</span>'; act = `<button class="btn primary" data-act="dDespPed" data-v="${s.id}">Despachar</button>`; }
-    else if (e.estado === 'en_camino') { st = `${ST.en_camino} <span class="muted small">salió ${fHora(e.salio_en)} · ${h(e.salio_por)}</span>`; act = `<button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button><button class="btn primary" data-act="dEntr" data-v="${e.id}">Marcar entregado</button>`; }
-    else if (e.estado === 'entregado') { st = `${ST.entregado} <span class="muted small">dejado ${fHora(e.entregado_en)} · ${h(e.entregado_por)}</span>`; act = `<button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button>`; }
+    else if (e.estado === 'en_camino') { st = `${ST.en_camino} <span class="muted small">salió ${fHora(e.salio_en)} · ${h(e.salio_por)}</span>`; act = `<button class="btn danger" data-act="anularEnv" data-v="${e.id}">Anular</button><button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button><button class="btn primary" data-act="dEntr" data-v="${e.id}">Marcar entregado</button>`; }
+    else if (e.estado === 'entregado') { st = `${ST.entregado} <span class="muted small">dejado ${fHora(e.entregado_en)} · ${h(e.entregado_por)}</span>`; act = `<button class="btn danger" data-act="anularEnv" data-v="${e.id}">Anular</button><button class="btn" data-act="printEnv" data-v="${e.id}">Etiquetas</button>`; }
     else st = `${ST[e.estado]} <span class="muted small">${h(e.recibido_por)} · ${fHora(e.recibido_en)}</span>`;
     return `<div class="desp-card"><div class="desp-head"><div><b class="desp-suc">${h(s.nombre)}</b>${e ? ` <span class="mono muted">${e.codigo}</span>` : ''}<div>${st}</div></div><div class="row">${act}</div></div>
       <div class="desp-items">${items.map(i => `<span class="chip">${h(S.P[i.pid]?.nombre)} <b>×${i.n}</b></span>`).join('')}</div>
@@ -928,6 +928,9 @@ document.addEventListener('click', async ev => {
       case 'dcat': S.dist.cat = v; S.dist.buscar = ''; break;
       case 'hojaCocina': hojaCocina(); return;
       case 'printEnv': { const e = S.envios.find(x => x.id === +v); if (e) imprimir(e.paquetes); return; }
+      case 'anularEnv': { const e = S.envios.find(x => x.id === +v); if (!e) return;
+        confirmar('Anular ' + e.codigo, `El envío a <b>${h(sucNombre(e.sucursal_id))}</b> se cancela y sus ${e.paquetes.length} paquete(s) regresan a bodega. Úselo si se despachó por error o dos veces. Queda registrado en la actividad. Después puede volver a despachar el pedido.`, 'Anular envío', async () => {
+          await rpc('anular_envio', { p_codigo: e.codigo, p_motivo: 'Anulado desde Despacho' }); toast(e.codigo + ' anulado. Los paquetes regresaron a bodega.'); await cargarOficina(); }, true); return; }
       case 'llenarBase': { if (!S.dist.disponible) { toast('Falta correr el SQL 06 en Supabase.'); return; }
         const F = S.dist.fecha; const dia = diaSemana(F); const filas = [];
         for (const su of S.suc) { const pl = S.plan[su.id]; const toca = pl.days.includes(dia);
