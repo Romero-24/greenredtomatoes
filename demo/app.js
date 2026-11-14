@@ -940,7 +940,12 @@ document.addEventListener('click', async ev => {
         toast(filas.length ? 'Se llenaron ' + filas.length + ' casillas con el pedido base. Ajuste lo que haga falta.' : 'Ya estaba todo lleno.'); break; }
       case 'dDespPed': { const su = v; const n = pedidoUnidades(hoy(), su);
         confirmar('Despachar a ' + sucNombre(su), 'Sale el pedido del día: ' + n + ' unidades. Se arman los paquetes con las cantidades exactas y la comida de cocina queda registrada como producción.', 'Despachar', async () => {
-          const cod = await rpc('despachar_pedido', { p_sucursal: su, p_fecha: hoy() }); toast(cod + ' salió hacia ' + h(sucNombre(su)) + '. Imprima las etiquetas desde esta pantalla.'); await cargarOficina(); }); return; }
+          const cod = await rpc('despachar_pedido', { p_sucursal: su, p_fecha: hoy() }); await cargarOficina();
+          const e = S.envios.find(x => x.codigo === cod);
+          setTimeout(() => { S.modal = { tipo: 'info', titulo: 'Envío ' + cod + ' listo', html: `<p style="margin:0">Salió de bodega hacia <b>${h(sucNombre(su))}</b> con ${e ? e.paquetes.length : ''} paquete(s).</p>
+            <ol class="muted" style="margin:0;padding-left:20px;line-height:1.7"><li>Imprima las etiquetas y péguelas en cada paquete o bandeja.</li><li>Lleve el envío a la sucursal y toque <b>Marcar entregado</b>.</li><li>La sucursal lo recibe escaneando las etiquetas con la tablet.</li></ol>
+            <div class="row" style="justify-content:flex-end">${e ? `<button class="btn primary" data-act="printEnv" data-v="${e.id}">Imprimir etiquetas</button>` : ''}<button class="btn" data-act="mCancel">Listo</button></div>` }; renderModal(); }, 0);
+        }); return; }
       case 'dEntr': { const e = S.envios.find(x => x.id === +v); confirmar('Marcar entregado', `${e.codigo} quedó en ${h(sucNombre(e.sucursal_id))}. Después la sucursal debe escanear los paquetes.`, 'Entregado', async () => {
         await rpc('marcar_entregado', { p_envio: +v }); toast('Entrega registrada.'); await cargarOficina(); }); return; }
       case 'pday': { const s = b.dataset.s, d = +v; const on = S.plan[s].days.includes(d);
